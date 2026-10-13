@@ -249,86 +249,86 @@ export const NotesHistory: React.FC<NotesHistoryProps> = ({ onOpenCreateNote }) 
     <div className="max-w-4xl mx-auto px-4 py-6 space-y-5">
       
       {/* Top Header & Tab Navigation */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-stone-200/80 dark:border-stone-800 pb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-black/[0.06] dark:border-white/[0.08] pb-4">
         <div>
-          <h2 className="text-base font-bold text-stone-900 dark:text-stone-100 font-display">My Notes Management</h2>
-          <p className="text-xs text-stone-500 dark:text-stone-400">Local-first note storage, drafts, scheduling, and custom templates</p>
+          <h2 className="text-lg font-bold text-[#191D1A] dark:text-[#F5F7F5] font-display">My Notes Management</h2>
+          <p className="text-xs text-[#8A968F]">Local-first note storage, drafts, scheduling, and inner circle controls</p>
         </div>
 
         <button
           onClick={onOpenCreateNote}
-          className="px-4 py-2 neo-btn-primary text-xs font-black flex items-center gap-1.5 self-start sm:self-auto cursor-pointer"
+          className="florum-btn-primary text-xs py-2 px-4 flex items-center gap-1.5 self-start sm:self-auto cursor-pointer"
         >
-          <Plus className="w-3.5 h-3.5 stroke-[3]" />
+          <Plus className="w-3.5 h-3.5" />
           <span>New Note</span>
         </button>
       </div>
 
-      {/* Tabs */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-1.5 text-xs p-1.5 bg-stone-100 dark:bg-[#12121A] border-2 border-stone-900 dark:border-stone-750 rounded-2xl shadow-[2px_2px_0px_#121217]">
+      {/* Modern Segmented Tabs */}
+      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs p-1 bg-[#F5F2EB] dark:bg-[#181C1A] border border-black/[0.05] dark:border-white/[0.06] rounded-2xl">
         <button
           onClick={() => setActiveTab('active')}
-          className={`px-3.5 py-2 rounded-xl font-black uppercase tracking-wider transition-all whitespace-nowrap cursor-pointer ${
+          className={`px-3.5 py-1.5 rounded-xl font-semibold transition-all whitespace-nowrap cursor-pointer ${
             activeTab === 'active' 
-              ? 'bg-amber-400 text-stone-950 border-2 border-stone-900 shadow-[2px_2px_0px_#121217]' 
-              : 'text-stone-700 dark:text-stone-300 hover:text-stone-950 dark:hover:text-white'
+              ? 'bg-white dark:bg-[#242A27] text-[#191D1A] dark:text-white shadow-xs font-bold' 
+              : 'text-[#58635C] dark:text-[#9DAAA0] hover:text-[#191D1A] dark:hover:text-white'
           }`}
         >
           Active ({activeNotes.length})
         </button>
         <button
           onClick={() => setActiveTab('scheduled')}
-          className={`px-3.5 py-2 rounded-xl font-black uppercase tracking-wider transition-all whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${
+          className={`px-3.5 py-1.5 rounded-xl font-semibold transition-all whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${
             activeTab === 'scheduled' 
-              ? 'bg-amber-400 text-stone-950 border-2 border-stone-900 shadow-[2px_2px_0px_#121217]' 
-              : 'text-stone-700 dark:text-stone-300 hover:text-stone-950 dark:hover:text-white'
+              ? 'bg-white dark:bg-[#242A27] text-[#191D1A] dark:text-white shadow-xs font-bold' 
+              : 'text-[#58635C] dark:text-[#9DAAA0] hover:text-[#191D1A] dark:hover:text-white'
           }`}
         >
-          <Calendar className="w-3.5 h-3.5 stroke-[2.5]" />
+          <Calendar className="w-3.5 h-3.5" />
           <span>Scheduled ({scheduledNotes.length})</span>
         </button>
         <button
           onClick={() => setActiveTab('drafts')}
-          className={`px-3.5 py-2 rounded-xl font-black uppercase tracking-wider transition-all whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${
+          className={`px-3.5 py-1.5 rounded-xl font-semibold transition-all whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${
             activeTab === 'drafts' 
-              ? 'bg-amber-400 text-stone-950 border-2 border-stone-900 shadow-[2px_2px_0px_#121217]' 
-              : 'text-stone-700 dark:text-stone-300 hover:text-stone-950 dark:hover:text-white'
+              ? 'bg-white dark:bg-[#242A27] text-[#191D1A] dark:text-white shadow-xs font-bold' 
+              : 'text-[#58635C] dark:text-[#9DAAA0] hover:text-[#191D1A] dark:hover:text-white'
           }`}
         >
-          <FileEdit className="w-3.5 h-3.5 stroke-[2.5]" />
+          <FileEdit className="w-3.5 h-3.5" />
           <span>Drafts ({draftNotes.length})</span>
         </button>
         <button
           onClick={() => setActiveTab('history')}
-          className={`px-3.5 py-2 rounded-xl font-black uppercase tracking-wider transition-all whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${
+          className={`px-3.5 py-1.5 rounded-xl font-semibold transition-all whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${
             activeTab === 'history' 
-              ? 'bg-amber-400 text-stone-950 border-2 border-stone-900 shadow-[2px_2px_0px_#121217]' 
-              : 'text-stone-700 dark:text-stone-300 hover:text-stone-950 dark:hover:text-white'
+              ? 'bg-white dark:bg-[#242A27] text-[#191D1A] dark:text-white shadow-xs font-bold' 
+              : 'text-[#58635C] dark:text-[#9DAAA0] hover:text-[#191D1A] dark:hover:text-white'
           }`}
         >
-          <Clock className="w-3.5 h-3.5 stroke-[2.5]" />
+          <Clock className="w-3.5 h-3.5" />
           <span>Expired ({pastNotes.length})</span>
         </button>
         <button
           onClick={() => setActiveTab('templates')}
-          className={`px-3.5 py-2 rounded-xl font-black uppercase tracking-wider transition-all whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${
+          className={`px-3.5 py-1.5 rounded-xl font-semibold transition-all whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${
             activeTab === 'templates' 
-              ? 'bg-amber-400 text-stone-950 border-2 border-stone-900 shadow-[2px_2px_0px_#121217]' 
-              : 'text-stone-700 dark:text-stone-300 hover:text-stone-950 dark:hover:text-white'
+              ? 'bg-white dark:bg-[#242A27] text-[#191D1A] dark:text-white shadow-xs font-bold' 
+              : 'text-[#58635C] dark:text-[#9DAAA0] hover:text-[#191D1A] dark:hover:text-white'
           }`}
         >
-          <Bookmark className="w-3.5 h-3.5 stroke-[2.5]" />
+          <Bookmark className="w-3.5 h-3.5" />
           <span>Templates ({templates.length})</span>
         </button>
         <button
           onClick={() => setActiveTab('close_friends')}
-          className={`px-3.5 py-2 rounded-xl font-black uppercase tracking-wider transition-all whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${
+          className={`px-3.5 py-1.5 rounded-xl font-semibold transition-all whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${
             activeTab === 'close_friends' 
-              ? 'bg-amber-400 text-stone-950 border-2 border-stone-900 shadow-[2px_2px_0px_#121217]' 
-              : 'text-stone-700 dark:text-stone-300 hover:text-stone-950 dark:hover:text-white'
+              ? 'bg-white dark:bg-[#242A27] text-[#191D1A] dark:text-white shadow-xs font-bold' 
+              : 'text-[#58635C] dark:text-[#9DAAA0] hover:text-[#191D1A] dark:hover:text-white'
           }`}
         >
-          <Users className="w-3.5 h-3.5 stroke-[2.5]" />
+          <Users className="w-3.5 h-3.5" />
           <span>Inner Circle ({closeFriends.length})</span>
         </button>
       </div>
@@ -337,11 +337,11 @@ export const NotesHistory: React.FC<NotesHistoryProps> = ({ onOpenCreateNote }) 
       {activeTab === 'active' && (
         <div className="space-y-4">
           {activeNotes.length === 0 ? (
-            <div className="text-center py-14 neo-card bg-white dark:bg-[#161622] rounded-3xl">
-              <p className="text-xs font-bold text-stone-500">You don't have any active notes right now.</p>
+            <div className="text-center py-14 florum-card bg-white dark:bg-[#181C1A]">
+              <p className="text-xs text-[#8A968F]">You don't have any active notes right now.</p>
               <button
                 onClick={onOpenCreateNote}
-                className="mt-3 px-4 py-2 neo-btn-primary text-stone-950 text-xs font-black rounded-xl cursor-pointer"
+                className="mt-3 florum-btn-primary text-xs py-2 px-4 cursor-pointer"
               >
                 Create an active note
               </button>
@@ -350,7 +350,7 @@ export const NotesHistory: React.FC<NotesHistoryProps> = ({ onOpenCreateNote }) 
             activeNotes.map((note) => (
               <div
                 key={note.id}
-                className="neo-card bg-white dark:bg-[#161622] rounded-3xl p-5 border-2.5 border-stone-900 shadow-[5px_5px_0px_#121217] space-y-3"
+                className="florum-card bg-white dark:bg-[#181C1A] p-5 space-y-3"
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">

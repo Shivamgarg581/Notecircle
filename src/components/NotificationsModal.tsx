@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Bell, X, CheckCheck, Clock, Heart, MessageCircle, UserPlus, MessageSquare } from 'lucide-react';
+import { Bell, X, CheckCheck, Clock } from 'lucide-react';
 import { api } from '../services/api.ts';
 import { useAuth } from '../context/AuthContext.tsx';
 import { UserAvatar } from './UserAvatar.tsx';
@@ -62,46 +62,59 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-950/70 backdrop-blur-xs">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/40 backdrop-blur-sm animate-in fade-in">
       <div 
-        className="neo-card bg-white dark:bg-[#161622] w-full max-w-md rounded-3xl shadow-[6px_6px_0px_#121217] overflow-hidden flex flex-col max-h-[85vh]"
+        className="florum-card bg-white dark:bg-[#181C1A] w-full max-w-md rounded-3xl shadow-xl overflow-hidden flex flex-col max-h-[85vh] border border-black/[0.08] dark:border-white/[0.10]"
         role="dialog"
       >
-        <div className="p-4 px-5 border-b-2 border-stone-900 dark:border-stone-800 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-amber-400 border-2 border-stone-900 flex items-center justify-center text-stone-950 font-bold shadow-[2px_2px_0px_#121217]">
-              <Bell className="w-4 h-4 stroke-[2.5]" />
+        {/* Header */}
+        <div className="p-4 sm:p-5 border-b border-black/[0.06] dark:border-white/[0.08] flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-2xl bg-gradient-to-br from-emerald-700 to-emerald-900 text-white flex items-center justify-center shadow-xs">
+              <Bell className="w-4 h-4 text-emerald-100" />
             </div>
-            <span className="text-sm font-black text-stone-900 dark:text-stone-100 uppercase tracking-wide">Notifications</span>
+            <div>
+              <h2 className="text-sm sm:text-base font-bold font-display text-[#191D1A] dark:text-[#F5F7F5]">
+                Notifications
+              </h2>
+              <p className="text-[11px] text-[#8A968F]">Activity from your circle</p>
+            </div>
           </div>
 
           <div className="flex items-center gap-2">
             {notifications.some((n) => !n.read) && (
               <button
                 onClick={handleMarkAllRead}
-                className="text-xs text-amber-600 dark:text-amber-400 hover:underline font-black flex items-center gap-1 cursor-pointer"
+                className="text-xs text-emerald-700 dark:text-emerald-400 hover:underline font-semibold flex items-center gap-1 cursor-pointer py-1 px-2 rounded-lg"
               >
-                <CheckCheck className="w-3.5 h-3.5 stroke-[2.5]" />
+                <CheckCheck className="w-3.5 h-3.5" />
                 <span>Mark read</span>
               </button>
             )}
             <button
               onClick={onClose}
-              className="p-1 rounded-xl neo-btn text-stone-900 dark:text-stone-100 bg-white dark:bg-[#1A1A26] cursor-pointer"
+              className="p-2 rounded-xl text-[#8A968F] hover:text-[#191D1A] dark:hover:text-white hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors cursor-pointer"
+              aria-label="Close"
             >
-              <X className="w-4 h-4 stroke-[2.5]" />
+              <X className="w-4 h-4" />
             </button>
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto divide-y-2 divide-stone-100 dark:divide-stone-800">
+        {/* Notifications Scroll View */}
+        <div className="flex-1 overflow-y-auto divide-y divide-black/[0.04] dark:divide-white/[0.06]">
           {isLoading ? (
-            <p className="text-xs font-bold text-stone-400 text-center py-8">Loading notifications...</p>
+            <div className="text-center py-12 text-xs text-[#8A968F]">
+              <Clock className="w-6 h-6 mx-auto mb-2 text-[#8A968F] animate-spin" />
+              <span>Loading notifications...</span>
+            </div>
           ) : notifications.length === 0 ? (
-            <div className="text-center py-12 text-stone-400">
-              <Bell className="w-8 h-8 mx-auto mb-2 text-stone-400 stroke-[2.5]" />
-              <p className="text-xs font-black text-stone-900 dark:text-stone-100">No notifications yet</p>
-              <p className="text-[11px] font-bold text-stone-500 mt-1">You're all caught up!</p>
+            <div className="text-center py-16 px-4 text-[#8A968F]">
+              <div className="w-12 h-12 rounded-2xl bg-[#F5F2EB] dark:bg-[#1E2421] flex items-center justify-center mx-auto mb-3 text-[#8A968F]">
+                <Bell className="w-6 h-6" />
+              </div>
+              <p className="text-sm font-semibold text-[#191D1A] dark:text-[#F5F7F5]">No notifications yet</p>
+              <p className="text-xs mt-1 text-[#8A968F]">You're all caught up with your circle.</p>
             </div>
           ) : (
             notifications.map((notif) => {
@@ -109,16 +122,18 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
                 <div
                   key={notif.id}
                   onClick={() => handleItemClick(notif)}
-                  className={`p-3.5 px-5 flex items-start gap-3 transition-colors cursor-pointer ${
-                    notif.read ? 'hover:bg-stone-50 dark:hover:bg-[#1A1A28]' : 'bg-amber-100/60 dark:bg-amber-950/40 hover:bg-amber-100 dark:hover:bg-amber-950/60'
+                  className={`p-3.5 sm:p-4 px-5 flex items-start gap-3 transition-colors cursor-pointer ${
+                    notif.read 
+                      ? 'hover:bg-[#FAF8F5] dark:hover:bg-[#1E2421]' 
+                      : 'bg-emerald-50/60 dark:bg-emerald-950/30 hover:bg-emerald-50 dark:hover:bg-emerald-950/50'
                   }`}
                 >
-                  <UserAvatar name={notif.senderName} src={notif.senderAvatar} size="sm" />
-                  <div className="flex-1 text-xs">
-                    <p className={`text-stone-900 dark:text-stone-100 ${notif.read ? 'font-medium' : 'font-black'}`}>
+                  <UserAvatar name={notif.senderName} src={notif.senderAvatar} size="md" />
+                  <div className="flex-1 min-w-0 text-xs">
+                    <p className={`text-xs leading-relaxed ${notif.read ? 'text-[#58635C] dark:text-[#9DAAA0] font-normal' : 'text-[#191D1A] dark:text-[#F5F7F5] font-semibold'}`}>
                       {notif.text}
                     </p>
-                    <span className="text-[10px] font-bold text-stone-400 mt-0.5 block">
+                    <span className="text-[10px] text-[#8A968F] mt-1 block">
                       {new Date(notif.createdAt).toLocaleTimeString([], {
                         hour: '2-digit',
                         minute: '2-digit'
@@ -126,7 +141,7 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
                     </span>
                   </div>
                   {!notif.read && (
-                    <span className="w-2.5 h-2.5 rounded-full bg-amber-500 border border-stone-900 shrink-0 mt-1.5 shadow-xs" />
+                    <span className="w-2 h-2 rounded-full bg-emerald-600 shrink-0 mt-2 shadow-xs" />
                   )}
                 </div>
               );

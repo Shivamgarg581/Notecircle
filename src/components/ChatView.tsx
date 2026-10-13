@@ -395,40 +395,40 @@ export const ChatView: React.FC<ChatViewProps> = ({ initialUserId, onActiveConve
 
   return (
     <div className="max-w-5xl mx-auto px-0 sm:px-4 py-0 sm:py-4 h-[calc(100dvh-3.75rem)] sm:h-[calc(100vh-6rem)] flex flex-col min-h-0 w-full">
-      <div className="neo-card bg-white dark:bg-[#161622] rounded-none sm:rounded-3xl overflow-hidden flex-1 flex shadow-none sm:shadow-[5px_5px_0px_0px_#121217] dark:sm:shadow-[5px_5px_0px_0px_#050508] border-x-0 sm:border-2.5 min-h-0">
+      <div className="florum-card bg-white dark:bg-[#181C1A] rounded-none sm:rounded-3xl overflow-hidden flex-1 flex border-x-0 sm:border border-black/[0.08] dark:border-white/[0.10] min-h-0 shadow-sm">
         
         {/* Left Sidebar: Conversations List (Hidden on mobile when chat is open) */}
-        <div className={`${activeConvId ? 'hidden sm:flex' : 'flex'} w-full sm:w-84 sm:shrink-0 border-r-2 border-stone-900 dark:border-stone-750 flex-col bg-stone-50/80 dark:bg-[#181824] min-h-0`}>
+        <div className={`${activeConvId ? 'hidden sm:flex' : 'flex'} w-full sm:w-80 sm:shrink-0 border-r border-black/[0.06] dark:border-white/[0.08] flex-col bg-[#FAF8F5]/80 dark:bg-[#151917] min-h-0`}>
           
           {/* Search Header */}
-          <div className="p-3.5 border-b-2 border-stone-900 dark:border-stone-750 bg-white dark:bg-[#161622] flex items-center gap-2">
+          <div className="p-3.5 border-b border-black/[0.06] dark:border-white/[0.08] bg-white dark:bg-[#181C1A] flex items-center gap-2">
             <div className="relative flex-1">
-              <Search className="w-4 h-4 text-stone-500 absolute left-3 top-2.5" />
+              <Search className="w-4 h-4 text-[#8A968F] absolute left-3 top-2.5" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search conversations..."
-                className="w-full pl-9 pr-3 py-1.5 text-xs font-bold neo-input text-stone-900 dark:text-stone-100 placeholder:text-stone-400"
+                className="w-full pl-9 pr-3 py-1.5 text-xs font-medium florum-input"
               />
             </div>
             <button
               onClick={() => setShowGroupModal(true)}
-              className="p-2 rounded-xl neo-btn text-stone-900 dark:text-stone-100 bg-white dark:bg-[#1A1A26] cursor-pointer"
+              className="p-2 rounded-xl florum-btn-ghost text-[#58635C] dark:text-[#9DAAA0] hover:text-[#191D1A] dark:hover:text-white cursor-pointer"
               title="Create Private Group Chat"
             >
-              <Users className="w-4 h-4 stroke-[2.5]" />
+              <Users className="w-4 h-4" />
             </button>
           </div>
 
           {/* Conversations Scroll Area */}
-          <div className="flex-1 overflow-y-auto divide-y-2 divide-stone-100 dark:divide-stone-800/80 min-h-0">
+          <div className="flex-1 overflow-y-auto divide-y divide-black/[0.04] dark:divide-white/[0.06] min-h-0">
             {filteredConversations.length === 0 ? (
-              <div className="p-8 text-center text-xs font-bold text-stone-500 dark:text-stone-400">
-                <Lock className="w-6 h-6 mx-auto mb-2 text-stone-400 dark:text-stone-600 stroke-[2.5]" />
-                <p className="font-black text-stone-900 dark:text-stone-100 text-sm">No chats yet</p>
-                <p className="text-[11px] mt-1 text-stone-500">
-                  Search approved circle connections to start encrypted chats.
+              <div className="p-8 text-center text-xs text-[#8A968F]">
+                <Lock className="w-6 h-6 mx-auto mb-2 text-[#8A968F]" />
+                <p className="font-semibold text-[#191D1A] dark:text-[#F5F7F5] text-sm">No chats yet</p>
+                <p className="text-[11px] mt-1 text-[#8A968F]">
+                  Connect with trusted people from Circle to start encrypted messaging.
                 </p>
               </div>
             ) : (
@@ -444,29 +444,27 @@ export const ChatView: React.FC<ChatViewProps> = ({ initialUserId, onActiveConve
                     onClick={() => setActiveConvId(conv.id)}
                     className={`w-full text-left p-3.5 transition-all flex items-start gap-3 cursor-pointer ${
                       isActive 
-                        ? 'bg-amber-300 dark:bg-amber-400/90 text-stone-950 font-black border-l-4 border-stone-900 shadow-[inset_0px_2px_4px_rgba(0,0,0,0.06)]' 
-                        : 'hover:bg-amber-50 dark:hover:bg-[#20202F]'
+                        ? 'bg-emerald-50/80 dark:bg-emerald-950/40 text-[#191D1A] dark:text-[#F5F7F5] border-l-3 border-emerald-600' 
+                        : 'hover:bg-[#FAF8F5] dark:hover:bg-[#1E2421]'
                     }`}
                   >
                     <div className="relative shrink-0">
                       {isGroup ? (
-                        <div className="w-10 h-10 rounded-2xl bg-amber-400 text-stone-950 border-2 border-stone-900 flex items-center justify-center font-black text-xs shadow-[2px_2px_0px_0px_#121217]">
+                        <div className="w-10 h-10 rounded-2xl bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-200 flex items-center justify-center font-bold text-xs shadow-xs">
                           GRP
                         </div>
                       ) : (
                         other && (
-                          <div className="border-2 border-stone-900 rounded-full p-0.5 shadow-[2px_2px_0px_0px_#121217] bg-white dark:bg-stone-850">
-                            <UserAvatar
-                              name={other.displayName}
-                              src={other.avatarUrl}
-                              size="md"
-                              isOnline={isOtherOnline}
-                            />
-                          </div>
+                          <UserAvatar
+                            name={other.displayName}
+                            src={other.avatarUrl}
+                            size="md"
+                            isOnline={isOtherOnline}
+                          />
                         )
                       )}
                       {!isGroup && other?.availability && (
-                        <span className="absolute -bottom-1 -right-1 text-xs select-none bg-white dark:bg-[#161622] rounded-full p-0.5 border-1.5 border-stone-900 shadow-[1px_1px_0px_0px_#121217]">
+                        <span className="absolute -bottom-1 -right-1 text-xs select-none bg-white dark:bg-[#181C1A] rounded-full p-0.5 border border-black/[0.08] dark:border-white/[0.08] shadow-xs">
                           {other.availability.emoji}
                         </span>
                       )}
@@ -474,11 +472,11 @@ export const ChatView: React.FC<ChatViewProps> = ({ initialUserId, onActiveConve
 
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">
-                        <p className={`text-xs font-black truncate ${isActive ? 'text-stone-950' : 'text-stone-950 dark:text-stone-50'}`}>
+                        <p className={`text-xs truncate ${isActive ? 'font-bold text-emerald-900 dark:text-emerald-300' : 'font-semibold text-[#191D1A] dark:text-[#F5F7F5]'}`}>
                           {isGroup ? conv.title : other?.displayName || 'Unknown'}
                         </p>
                         {conv.lastMessage && (
-                          <span className={`text-[10px] font-bold shrink-0 ${isActive ? 'text-stone-800' : 'text-stone-400'}`}>
+                          <span className="text-[10px] text-[#8A968F] shrink-0">
                             {new Date(conv.lastMessage.createdAt).toLocaleTimeString([], {
                               hour: '2-digit',
                               minute: '2-digit'
@@ -489,19 +487,19 @@ export const ChatView: React.FC<ChatViewProps> = ({ initialUserId, onActiveConve
 
                       {/* Display participant's active status note if present */}
                       {!isGroup && other?.activeNote ? (
-                        <p className={`text-[11px] font-bold truncate flex items-center gap-1 mt-0.5 ${isActive ? 'text-amber-950' : 'text-amber-700 dark:text-amber-400'}`}>
+                        <p className="text-[11px] font-medium text-emerald-700 dark:text-emerald-400 truncate flex items-center gap-1 mt-0.5">
                           <span>{other.activeNote.emoji}</span>
                           <span className="truncate">{other.activeNote.categoryLabel}: {other.activeNote.text}</span>
                         </p>
                       ) : (
-                        <p className={`text-[11px] truncate mt-0.5 ${isActive ? 'text-stone-800 font-bold' : 'text-stone-500 dark:text-stone-400 font-medium'}`}>
+                        <p className="text-[11px] text-[#8A968F] truncate mt-0.5">
                           {conv.lastMessage?.text || 'No messages yet'}
                         </p>
                       )}
                     </div>
 
                     {conv.unreadCount > 0 && (
-                      <span className="w-5 h-5 bg-rose-500 text-white border-1.5 border-stone-900 rounded-full text-[10px] font-black flex items-center justify-center shrink-0">
+                      <span className="w-5 h-5 bg-emerald-600 text-white rounded-full text-[10px] font-semibold flex items-center justify-center shrink-0">
                         {conv.unreadCount}
                       </span>
                     )}
@@ -513,22 +511,22 @@ export const ChatView: React.FC<ChatViewProps> = ({ initialUserId, onActiveConve
         </div>
 
         {/* Right Main Area: Active Chat */}
-        <div className={`${!activeConvId ? 'hidden sm:flex' : 'flex'} flex-1 flex-col bg-white/95 dark:bg-stone-900/95 min-w-0 min-h-0 relative`}>
+        <div className={`${!activeConvId ? 'hidden sm:flex' : 'flex'} flex-1 flex-col bg-[#FAF8F5]/50 dark:bg-[#151917] min-w-0 min-h-0 relative`}>
           {activeConversation ? (
             <>
               {/* Chat Header */}
-              <div className="px-3 sm:px-4 py-2.5 sm:py-3 border-b-2 border-stone-900 dark:border-stone-750 flex items-center justify-between bg-white dark:bg-[#161622] z-10 shrink-0">
-                <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+              <div className="px-4 py-3 border-b border-black/[0.06] dark:border-white/[0.08] flex items-center justify-between bg-white dark:bg-[#181C1A] z-10 shrink-0">
+                <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
                   <button
                     type="button"
                     onClick={() => setActiveConvId(null)}
-                    className="sm:hidden p-1.5 -ml-1 text-stone-900 dark:text-stone-100 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-xl neo-btn cursor-pointer shrink-0 transition-colors"
+                    className="sm:hidden p-1.5 -ml-1 text-[#58635C] dark:text-[#9DAAA0] hover:text-[#191D1A] dark:hover:text-white rounded-xl florum-btn-ghost cursor-pointer shrink-0"
                     title="Back to conversations list"
                   >
-                    <ChevronLeft className="w-5 h-5 stroke-[2.5]" />
+                    <ChevronLeft className="w-5 h-5" />
                   </button>
                   {activeConversation.type === 'group' ? (
-                    <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-linear-to-br from-amber-500 to-amber-700 text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-xs">
+                    <div className="w-9 h-9 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-200 flex items-center justify-center font-bold text-xs shrink-0 shadow-xs">
                       GRP
                     </div>
                   ) : (
@@ -544,29 +542,29 @@ export const ChatView: React.FC<ChatViewProps> = ({ initialUserId, onActiveConve
                     )
                   )}
                   <div className="min-w-0">
-                    <h4 className="text-xs sm:text-sm font-bold text-stone-900 dark:text-stone-100 flex items-center gap-2 truncate">
+                    <h4 className="text-xs sm:text-sm font-semibold text-[#191D1A] dark:text-[#F5F7F5] flex items-center gap-2 truncate">
                       <span className="truncate">{activeConversation.type === 'group' ? activeConversation.title : otherParticipant?.displayName}</span>
                       {otherParticipant?.availability && (
-                        <span className="text-[11px] text-stone-500 font-medium hidden sm:flex items-center gap-1 shrink-0">
+                        <span className="text-[11px] text-[#8A968F] font-normal hidden sm:flex items-center gap-1 shrink-0">
                           <span>{otherParticipant.availability.emoji}</span>
                           <span className="truncate">{otherParticipant.availability.label}</span>
                         </span>
                       )}
                     </h4>
-                    <div className="flex items-center gap-2 text-[10px] mt-0.5">
+                    <div className="flex items-center gap-1.5 text-[11px] mt-0.5">
                       {activeConversation.type === 'direct' && otherParticipant && (
                         isUserOnline(otherParticipant.id) ? (
-                          <span className="text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                          <span className="text-emerald-700 dark:text-emerald-400 font-medium flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                             Active now
                           </span>
                         ) : (
-                          <span className="text-stone-400">Offline</span>
+                          <span className="text-[#8A968F]">Offline</span>
                         )
                       )}
-                      <span className="text-stone-300 dark:text-stone-700">·</span>
-                      <span className="text-amber-700 dark:text-amber-400 flex items-center gap-1 font-semibold truncate">
-                        <ShieldCheck className="w-3 h-3 text-amber-600 shrink-0" />
+                      <span className="text-[#8A968F]">·</span>
+                      <span className="text-emerald-700 dark:text-emerald-400 flex items-center gap-1 font-medium truncate">
+                        <ShieldCheck className="w-3 h-3 text-emerald-600 shrink-0" />
                         <span className="truncate">E2EE Verified</span>
                       </span>
                     </div>
@@ -577,23 +575,23 @@ export const ChatView: React.FC<ChatViewProps> = ({ initialUserId, onActiveConve
                   <button
                     type="button"
                     onClick={() => setShowSafetyModal(true)}
-                    className="flex items-center gap-1 px-2.5 sm:px-3 py-1.5 bg-amber-50/80 dark:bg-amber-950/50 hover:bg-amber-100 dark:hover:bg-amber-900/60 text-amber-800 dark:text-amber-200 border border-amber-200/60 dark:border-amber-800/60 rounded-xl text-[11px] font-semibold transition-colors cursor-pointer shrink-0"
-                    title="Click to view Safety Number & verify E2E Cryptography"
+                    className="flex items-center gap-1 px-3 py-1.5 bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 text-emerald-800 dark:text-emerald-200 border border-emerald-200/60 dark:border-emerald-800/60 rounded-xl text-xs font-medium transition-colors cursor-pointer shrink-0"
+                    title="View Safety Number & verify E2E Cryptography"
                   >
-                    <ShieldCheck className="w-3.5 h-3.5 text-amber-600" />
+                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
                     <span className="hidden sm:inline">Verify Safety</span>
                     <span className="sm:hidden">Safety</span>
                   </button>
                 </div>
               </div>
 
-              {/* Note / DND Status Integration Banner */}
+              {/* Status Note Banner */}
               {otherParticipant?.activeNote && (
-                <div className="bg-amber-50/70 dark:bg-amber-950/30 border-b border-amber-200/50 dark:border-amber-800/50 px-3.5 py-2 flex items-center gap-2 text-xs text-amber-950 dark:text-amber-200 shrink-0">
-                  <span className="text-base select-none shrink-0">{otherParticipant.activeNote.emoji}</span>
+                <div className="bg-emerald-50/60 dark:bg-emerald-950/30 border-b border-emerald-200/40 dark:border-emerald-800/40 px-4 py-2 flex items-center gap-2 text-xs text-emerald-950 dark:text-emerald-200 shrink-0">
+                  <span className="text-sm select-none shrink-0">{otherParticipant.activeNote.emoji}</span>
                   <div className="flex-1 min-w-0 truncate">
                     <span className="font-semibold">{otherParticipant.displayName}</span>
-                    <span className="text-stone-400 mx-1">·</span>
+                    <span className="text-[#8A968F] mx-1.5">·</span>
                     <span className="italic truncate">"{otherParticipant.activeNote.text}"</span>
                   </div>
                   {otherParticipant.activeNote.isDnd && (
@@ -613,11 +611,11 @@ export const ChatView: React.FC<ChatViewProps> = ({ initialUserId, onActiveConve
               )}
 
               {/* Messages Body */}
-              <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3 bg-stone-50/50 dark:bg-[#121110]/50 min-h-0">
+              <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-0">
                 {messages.length === 0 ? (
-                  <div className="text-center py-14 text-stone-400">
-                    <p className="text-xs">No messages yet in this private conversation.</p>
-                    <p className="text-[11px] mt-1 text-stone-400">Messages are end-to-end encrypted before transmission.</p>
+                  <div className="text-center py-16 text-[#8A968F]">
+                    <p className="text-xs font-semibold text-[#191D1A] dark:text-[#F5F7F5]">No messages yet</p>
+                    <p className="text-[11px] mt-1 text-[#8A968F]">Messages are encrypted end-to-end with zero plaintext on server.</p>
                   </div>
                 ) : (
                   messages.map((msg) => {
@@ -632,26 +630,26 @@ export const ChatView: React.FC<ChatViewProps> = ({ initialUserId, onActiveConve
                           <div
                             className={`text-[11px] mb-1 px-2.5 py-1 rounded-xl border flex items-center gap-1.5 ${
                               isMine
-                                ? 'bg-amber-50 dark:bg-amber-950/60 text-amber-900 dark:text-amber-200 border-amber-200 dark:border-amber-800'
-                                : 'bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300 border-stone-200 dark:border-stone-700'
+                                ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-900 dark:text-emerald-200 border-emerald-200 dark:border-emerald-800'
+                                : 'bg-white dark:bg-[#1E2421] text-[#58635C] dark:text-[#9DAAA0] border-black/[0.06] dark:border-white/[0.08]'
                             }`}
                           >
-                            <CornerDownRight className="w-3 h-3 text-stone-400" />
+                            <CornerDownRight className="w-3 h-3 text-[#8A968F]" />
                             <span className="font-semibold">{msg.replyPreview.senderName}:</span>
                             <span className="truncate max-w-[200px]">{msg.replyPreview.text}</span>
                           </div>
                         )}
 
-                        <div className="flex items-end gap-1.5 max-w-[88%] sm:max-w-[80%] min-w-0">
+                        <div className="flex items-end gap-1.5 max-w-[85%] sm:max-w-[75%] min-w-0">
                           <div
-                            className={`p-3 sm:p-3.5 rounded-2xl text-xs sm:text-sm leading-relaxed border-2 relative break-words shadow-[3px_3px_0px_#121217] dark:shadow-[3px_3px_0px_#050508] ${
+                            className={`p-3 sm:p-3.5 text-xs sm:text-sm leading-relaxed relative break-words border-2 ${
                               isMine
-                                ? 'bg-amber-400 dark:bg-amber-500 text-stone-950 border-stone-900 font-medium'
-                                : 'bg-white dark:bg-[#1A1A28] border-stone-900 dark:border-stone-700 text-stone-900 dark:text-stone-100'
+                                ? 'bg-[#FFCA05] text-[#111111] border-[#111111] shadow-[2.5px_2.5px_0px_#111111] rounded-2xl rounded-br-xs font-semibold'
+                                : 'bg-[var(--card-surface)] text-[#111111] dark:text-[#F5F2EB] border-[#111111] dark:border-[#3E3E4A] shadow-[2.5px_2.5px_0px_#111111] rounded-2xl rounded-bl-xs font-medium'
                             }`}
                           >
                             {activeConversation.type === 'group' && !isMine && (
-                              <p className="text-[10px] font-black uppercase tracking-wider text-amber-700 dark:text-amber-400 mb-1">
+                              <p className="text-[10px] font-black text-[#111111] dark:text-[#FFCA05] mb-1 uppercase tracking-wider">
                                 {msg.senderName}
                               </p>
                             )}
@@ -659,8 +657,8 @@ export const ChatView: React.FC<ChatViewProps> = ({ initialUserId, onActiveConve
                             <p className="whitespace-pre-wrap break-words">{msg.text}</p>
 
                             <div
-                              className={`flex items-center justify-end gap-1 mt-1 text-[9px] font-bold ${
-                                isMine ? 'text-stone-800 dark:text-stone-900' : 'text-stone-500 dark:text-stone-400'
+                              className={`flex items-center justify-end gap-1 mt-1 text-[9px] ${
+                                isMine ? 'text-emerald-100/80' : 'text-[#8A968F]'
                               }`}
                             >
                               <span>
@@ -674,7 +672,7 @@ export const ChatView: React.FC<ChatViewProps> = ({ initialUserId, onActiveConve
 
                             {/* Message Reactions */}
                             {msg.reactions && msg.reactions.length > 0 && (
-                              <div className="absolute -bottom-2.5 right-2 bg-white dark:bg-[#1A1A28] border-2 border-stone-900 rounded-full px-2 py-0.5 shadow-[2px_2px_0px_#121217] flex items-center gap-0.5 text-[11px]">
+                              <div className="absolute -bottom-2 right-2 bg-white dark:bg-[#181C1A] border border-black/[0.08] dark:border-white/[0.10] rounded-full px-2 py-0.5 shadow-xs flex items-center gap-0.5 text-[11px]">
                                 {msg.reactions.map((r, idx) => (
                                   <span key={idx}>{r.emoji}</span>
                                 ))}
@@ -686,17 +684,17 @@ export const ChatView: React.FC<ChatViewProps> = ({ initialUserId, onActiveConve
                           <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 pb-1">
                             <button
                               onClick={() => setReplyToMessage(msg)}
-                              className="p-1.5 text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 rounded-lg neu-button text-xs"
+                              className="p-1.5 text-[#8A968F] hover:text-[#191D1A] dark:hover:text-white rounded-lg text-xs"
                               title="Reply"
                             >
                               <CornerDownRight className="w-3.5 h-3.5" />
                             </button>
                             <button
                               onClick={() => handleCopyText(msg.text, msg.id)}
-                              className="p-1.5 text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 rounded-lg neu-button text-xs"
+                              className="p-1.5 text-[#8A968F] hover:text-[#191D1A] dark:hover:text-white rounded-lg text-xs"
                               title="Copy text"
                             >
-                              {copiedId === msg.id ? <Check className="w-3.5 h-3.5 text-amber-600" /> : <Copy className="w-3.5 h-3.5" />}
+                              {copiedId === msg.id ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
                             </button>
                             {isMine && !msg.isDeleted && (
                               <button
@@ -704,7 +702,7 @@ export const ChatView: React.FC<ChatViewProps> = ({ initialUserId, onActiveConve
                                   const delAll = confirm('Delete for everyone? Press Cancel to delete for you only.');
                                   handleDeleteMessage(msg.id, delAll);
                                 }}
-                                className="p-1.5 text-stone-400 hover:text-rose-600 rounded-lg neu-button text-xs"
+                                className="p-1.5 text-[#8A968F] hover:text-rose-600 rounded-lg text-xs"
                                 title="Delete message"
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
@@ -719,7 +717,7 @@ export const ChatView: React.FC<ChatViewProps> = ({ initialUserId, onActiveConve
                             <button
                               key={emoji}
                               onClick={() => handleReactToMessage(msg.id, emoji)}
-                              className="text-xs hover:scale-125 transition-transform"
+                              className="text-xs hover:scale-125 transition-transform cursor-pointer"
                             >
                               {emoji}
                             </button>
@@ -734,15 +732,15 @@ export const ChatView: React.FC<ChatViewProps> = ({ initialUserId, onActiveConve
 
               {/* Reply Preview */}
               {replyToMessage && (
-                <div className="px-3 sm:px-4 py-2 bg-amber-50/90 dark:bg-stone-900 border-t border-amber-200/60 dark:border-stone-800 flex items-center justify-between text-xs text-stone-600 dark:text-stone-300 shrink-0">
+                <div className="px-4 py-2 bg-emerald-50 dark:bg-emerald-950/40 border-t border-emerald-200/60 dark:border-emerald-800/60 flex items-center justify-between text-xs text-emerald-950 dark:text-emerald-200 shrink-0">
                   <div className="flex items-center gap-2 truncate">
-                    <CornerDownRight className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                    <CornerDownRight className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
                     <span className="shrink-0 font-medium">Replying to <strong>{replyToMessage.senderName}</strong>:</span>
-                    <span className="truncate italic text-stone-500 dark:text-stone-400">"{replyToMessage.text}"</span>
+                    <span className="truncate italic text-[#58635C] dark:text-[#9DAAA0]">"{replyToMessage.text}"</span>
                   </div>
                   <button
                     onClick={() => setReplyToMessage(null)}
-                    className="p-1 text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 shrink-0"
+                    className="p-1 text-[#8A968F] hover:text-[#191D1A] dark:hover:text-white shrink-0"
                   >
                     <X className="w-4 h-4" />
                   </button>
@@ -750,7 +748,7 @@ export const ChatView: React.FC<ChatViewProps> = ({ initialUserId, onActiveConve
               )}
 
               {/* Message Composer */}
-              <form onSubmit={handleSendMessage} className="p-2.5 sm:p-3.5 border-t-2 border-stone-900 dark:border-stone-750 bg-white dark:bg-[#161622] pb-[max(0.75rem,env(safe-area-inset-bottom))] shrink-0 z-20">
+              <form onSubmit={handleSendMessage} className="p-3 sm:p-3.5 border-t-2.5 border-black/10 dark:border-white/10 bg-[var(--card-surface)] pb-[max(0.75rem,env(safe-area-inset-bottom))] shrink-0 z-20">
                 <div className="flex items-center gap-2 max-w-full">
                   <input
                     type="text"
@@ -761,12 +759,12 @@ export const ChatView: React.FC<ChatViewProps> = ({ initialUserId, onActiveConve
                         ? `${otherParticipant.displayName} has strict DND active...`
                         : "Type an encrypted message..."
                     }
-                    className="flex-1 min-w-0 px-3.5 py-2.5 text-xs sm:text-sm font-bold neo-input text-stone-900 dark:text-stone-100 placeholder:text-stone-400"
+                    className="flex-1 min-w-0 px-4 py-2.5 text-xs sm:text-sm neo-input"
                   />
                   <button
                     type="submit"
                     disabled={isSending || !inputText.trim()}
-                    className="p-2.5 sm:px-4 sm:py-2.5 neo-btn-primary disabled:opacity-40 text-stone-950 rounded-2xl cursor-pointer shrink-0 flex items-center justify-center gap-1.5"
+                    className="p-2.5 sm:px-4 sm:py-2.5 neo-btn-primary disabled:opacity-40 rounded-xl cursor-pointer shrink-0 flex items-center justify-center gap-1.5 uppercase tracking-wider"
                     title="Send message"
                   >
                     <Send className="w-4 h-4 stroke-[2.5]" />
@@ -776,11 +774,11 @@ export const ChatView: React.FC<ChatViewProps> = ({ initialUserId, onActiveConve
               </form>
             </>
           ) : (
-            <div className="flex-1 flex flex-col items-center justify-center p-6 text-center text-stone-400 min-h-0">
-              <Lock className="w-8 h-8 text-stone-300 dark:text-stone-700 mb-2" />
-              <p className="text-sm font-bold text-stone-800 dark:text-stone-200">Private NoteCircle Chat</p>
-              <p className="text-xs text-stone-400 max-w-xs mt-1">
-                Select a conversation on the left, or connect with someone from Search to start messaging privately.
+            <div className="flex-1 flex flex-col items-center justify-center p-6 text-center text-[#8A968F] min-h-0">
+              <Lock className="w-8 h-8 text-[#8A968F] mb-2" />
+              <p className="text-sm font-semibold text-[#191D1A] dark:text-[#F5F7F5]">Private NoteCircle Chat</p>
+              <p className="text-xs text-[#8A968F] max-w-xs mt-1">
+                Select a conversation on the left, or connect with a friend from Circle to start messaging privately.
               </p>
             </div>
           )}
@@ -789,32 +787,32 @@ export const ChatView: React.FC<ChatViewProps> = ({ initialUserId, onActiveConve
 
       {/* Group Chat Modal */}
       {showGroupModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-950/70 backdrop-blur-xs">
-          <div className="neo-card bg-white dark:bg-[#161622] w-full max-w-md rounded-3xl p-5 sm:p-6 space-y-4">
-            <div className="flex items-center justify-between border-b-2 border-stone-900 dark:border-stone-800 pb-3">
-              <h3 className="text-sm font-black text-stone-900 dark:text-stone-100 uppercase tracking-wide">New Private Group Chat</h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in">
+          <div className="florum-card bg-white dark:bg-[#181C1A] w-full max-w-md p-5 sm:p-6 space-y-4">
+            <div className="flex items-center justify-between border-b border-black/[0.06] dark:border-white/[0.08] pb-3">
+              <h3 className="text-sm font-bold font-display text-[#191D1A] dark:text-[#F5F7F5]">New Private Group Chat</h3>
               <button 
                 onClick={() => setShowGroupModal(false)} 
-                className="p-1 rounded-xl neo-btn text-stone-900 dark:text-stone-100 bg-white dark:bg-[#1A1A26] cursor-pointer"
+                className="w-7 h-7 rounded-full flex items-center justify-center text-[#8A968F] hover:text-[#191D1A] dark:hover:text-white"
               >
-                <X className="w-5 h-5 stroke-[2.5]" />
+                <X className="w-4 h-4" />
               </button>
             </div>
 
             <div>
-              <label className="text-xs font-black uppercase tracking-wider text-stone-700 dark:text-stone-300 block mb-1">Group Title</label>
+              <label className="text-xs font-semibold text-[#191D1A] dark:text-[#F5F7F5] block mb-1.5">Group Title</label>
               <input
                 type="text"
                 value={groupTitle}
                 onChange={(e) => setGroupTitle(e.target.value)}
-                placeholder="e.g. Weekend Hiking Circle, Study Group..."
-                className="w-full text-xs font-bold p-3 neo-input text-stone-900 dark:text-stone-100 placeholder:text-stone-400"
+                placeholder="e.g. Weekend Hiking, Book Club..."
+                className="w-full text-xs p-3 florum-input"
               />
             </div>
 
             <div>
-              <label className="text-xs font-black uppercase tracking-wider text-stone-700 dark:text-stone-300 block mb-1">Select Connections (Min 2)</label>
-              <div className="max-h-48 overflow-y-auto space-y-2 border-2 border-stone-900 dark:border-stone-800 rounded-2xl p-2 bg-stone-50 dark:bg-[#181824]">
+              <label className="text-xs font-semibold text-[#191D1A] dark:text-[#F5F7F5] block mb-1.5">Select Connections (Min 2)</label>
+              <div className="max-h-48 overflow-y-auto space-y-2 border border-black/[0.06] dark:border-white/[0.08] rounded-2xl p-2 bg-[#FAF8F5] dark:bg-[#202622]">
                 {allConnections.map((user) => {
                   const isSelected = selectedGroupParticipants.includes(user.id);
                   return (
@@ -826,35 +824,35 @@ export const ChatView: React.FC<ChatViewProps> = ({ initialUserId, onActiveConve
                           isSelected ? prev.filter((id) => id !== user.id) : [...prev, user.id]
                         );
                       }}
-                      className={`w-full text-left p-2.5 rounded-xl flex items-center justify-between text-xs transition-colors cursor-pointer border-2 ${
+                      className={`w-full text-left p-2 rounded-xl flex items-center justify-between text-xs transition-colors cursor-pointer border ${
                         isSelected 
-                          ? 'bg-amber-300 dark:bg-amber-400 text-stone-950 font-black border-stone-900 shadow-[2px_2px_0px_#121217]' 
-                          : 'bg-white dark:bg-[#1E1E2C] border-transparent hover:border-stone-900 text-stone-900 dark:text-stone-100'
+                          ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-900 dark:text-emerald-200 border-emerald-400 font-semibold' 
+                          : 'bg-white dark:bg-[#181C1A] border-transparent hover:border-black/[0.08] text-[#191D1A] dark:text-[#F5F7F5]'
                       }`}
                     >
                       <div className="flex items-center gap-2">
                         <UserAvatar name={user.displayName} src={user.avatarUrl} size="xs" />
-                        <span className="font-bold">{user.displayName}</span>
+                        <span className="font-medium">{user.displayName}</span>
                       </div>
-                      {isSelected && <Check className="w-4 h-4 text-stone-950 stroke-[3]" />}
+                      {isSelected && <Check className="w-4 h-4 text-emerald-700 dark:text-emerald-400" />}
                     </button>
                   );
                 })}
               </div>
             </div>
 
-            <div className="flex justify-end gap-2 pt-2 border-t-2 border-stone-900 dark:border-stone-800">
+            <div className="flex justify-end gap-2 pt-2 border-t border-black/[0.06] dark:border-white/[0.08]">
               <button
                 type="button"
                 onClick={() => setShowGroupModal(false)}
-                className="px-3.5 py-2 text-xs font-bold text-stone-700 dark:text-stone-300 hover:underline cursor-pointer"
+                className="florum-btn-ghost text-xs py-2 px-3.5"
               >
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={handleCreateGroup}
-                className="px-4 py-2 neo-btn-primary text-stone-950 rounded-xl text-xs font-black cursor-pointer"
+                className="florum-btn-primary text-xs py-2 px-4"
               >
                 Create Group
               </button>
@@ -865,51 +863,51 @@ export const ChatView: React.FC<ChatViewProps> = ({ initialUserId, onActiveConve
 
       {/* Safety Number & Cryptographic Verification Modal */}
       {showSafetyModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-950/70 backdrop-blur-xs">
-          <div className="neo-card bg-white dark:bg-[#161622] w-full max-w-md rounded-3xl p-6 space-y-4">
-            <div className="flex items-center justify-between border-b-2 border-stone-900 dark:border-stone-800 pb-3">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in">
+          <div className="florum-card bg-white dark:bg-[#181C1A] w-full max-w-md p-6 space-y-4">
+            <div className="flex items-center justify-between border-b border-black/[0.06] dark:border-white/[0.08] pb-3">
               <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-amber-400 border-2 border-stone-900 text-stone-950 flex items-center justify-center font-bold shadow-[2px_2px_0px_#121217]">
-                  <ShieldCheck className="w-5 h-5 stroke-[2.5]" />
+                <div className="w-9 h-9 rounded-xl bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-200 flex items-center justify-center font-bold">
+                  <ShieldCheck className="w-5 h-5 text-emerald-700" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-black text-stone-900 dark:text-stone-100 uppercase tracking-wide">Verify Safety Number</h3>
-                  <p className="text-[11px] font-bold text-stone-500">End-to-End Encryption Verification</p>
+                  <h3 className="text-sm font-bold font-display text-[#191D1A] dark:text-[#F5F7F5]">Verify Safety Number</h3>
+                  <p className="text-[11px] text-[#8A968F]">End-to-End Encryption Verification</p>
                 </div>
               </div>
               <button 
                 onClick={() => setShowSafetyModal(false)} 
-                className="p-1 rounded-xl neo-btn text-stone-900 dark:text-stone-100 bg-white dark:bg-[#1A1A26] cursor-pointer"
+                className="w-7 h-7 rounded-full flex items-center justify-center text-[#8A968F] hover:text-[#191D1A] dark:hover:text-white"
               >
-                <X className="w-5 h-5 stroke-[2.5]" />
+                <X className="w-4 h-4" />
               </button>
             </div>
 
-            <p className="text-xs font-medium text-stone-700 dark:text-stone-300 leading-relaxed">
-              Compare this safety number with <strong>{otherParticipant?.displayName}</strong> in person or over another channel to verify that messages are encrypted end-to-end and protected against server substitution.
+            <p className="text-xs text-[#58635C] dark:text-[#9DAAA0] leading-relaxed">
+              Compare this safety number with <strong>{otherParticipant?.displayName}</strong> in person or over another channel to verify that messages are encrypted end-to-end and protected against server tampering.
             </p>
 
-            <div className="p-4 bg-amber-100 dark:bg-amber-950/40 border-2 border-stone-900 dark:border-stone-750 rounded-2xl text-center space-y-2 shadow-[3px_3px_0px_#121217]">
-              <span className="text-[10px] font-black text-stone-900 dark:text-amber-300 block uppercase tracking-widest">
+            <div className="p-4 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-800/80 rounded-2xl text-center space-y-1.5 shadow-xs">
+              <span className="text-[10px] font-semibold text-emerald-800 dark:text-emerald-300 block uppercase tracking-wider">
                 Cryptographic Safety Number
               </span>
-              <div className="font-mono text-base font-black text-stone-950 dark:text-stone-50 tracking-wider">
+              <div className="font-mono text-base font-bold text-emerald-950 dark:text-emerald-100 tracking-wider">
                 {safetyNumber || 'Computing safety number...'}
               </div>
             </div>
 
-            <div className="space-y-1.5 text-[11px] font-bold text-stone-600 dark:text-stone-400 border-t-2 border-stone-900 dark:border-stone-800 pt-3">
-              <p>• Key Exchange: <strong className="text-stone-900 dark:text-stone-100">ECDH (NIST P-256)</strong></p>
-              <p>• Symmetric Cipher: <strong className="text-stone-900 dark:text-stone-100">AES-GCM 256-bit</strong></p>
-              <p>• Forward Secrecy: <strong className="text-stone-900 dark:text-stone-100">Ephemeral keypair per message</strong></p>
-              <p>• Server Storage: <strong className="text-stone-900 dark:text-stone-100">Zero readable plaintext</strong></p>
+            <div className="space-y-1 text-[11px] text-[#58635C] dark:text-[#9DAAA0] border-t border-black/[0.06] dark:border-white/[0.08] pt-3">
+              <p>• Key Exchange: <strong className="text-[#191D1A] dark:text-[#F5F7F5]">ECDH (NIST P-256)</strong></p>
+              <p>• Symmetric Cipher: <strong className="text-[#191D1A] dark:text-[#F5F7F5]">AES-GCM 256-bit</strong></p>
+              <p>• Forward Secrecy: <strong className="text-[#191D1A] dark:text-[#F5F7F5]">Ephemeral keypair per message</strong></p>
+              <p>• Server Storage: <strong className="text-[#191D1A] dark:text-[#F5F7F5]">Zero readable plaintext</strong></p>
             </div>
 
             <div className="flex justify-end pt-2">
               <button
                 type="button"
                 onClick={() => setShowSafetyModal(false)}
-                className="px-5 py-2.5 neo-btn-primary text-stone-950 rounded-xl text-xs font-black cursor-pointer"
+                className="florum-btn-primary text-xs py-2 px-5 cursor-pointer"
               >
                 Done
               </button>
@@ -920,3 +918,4 @@ export const ChatView: React.FC<ChatViewProps> = ({ initialUserId, onActiveConve
     </div>
   );
 };
+

@@ -23,7 +23,7 @@ export const NeoCheckbox: React.FC<NeoCheckboxProps> = ({
   return (
     <label
       htmlFor={id}
-      className={`inline-flex items-start gap-3 select-none cursor-pointer group ${
+      className={`inline-flex items-start gap-2.5 select-none cursor-pointer group ${
         disabled ? 'opacity-50 pointer-events-none' : ''
       } ${className}`}
     >
@@ -37,25 +37,25 @@ export const NeoCheckbox: React.FC<NeoCheckboxProps> = ({
           className="sr-only"
         />
         <div
-          className={`w-5 h-5 rounded-lg border-2 border-stone-950 dark:border-stone-700 flex items-center justify-center transition-all ${
+          className={`w-5 h-5 rounded-lg border flex items-center justify-center transition-all ${
             checked
-              ? 'bg-amber-400 text-stone-950 shadow-[2px_2px_0px_#121217] scale-105'
-              : 'bg-white dark:bg-[#15141A] text-transparent shadow-[1px_1px_0px_#121217] group-hover:border-amber-400'
+              ? 'bg-emerald-700 text-white border-emerald-700 shadow-xs'
+              : 'bg-white dark:bg-[#1E2421] border-black/[0.15] dark:border-white/[0.15] text-transparent hover:border-emerald-600/50'
           }`}
         >
-          <Check className={`w-3.5 h-3.5 stroke-[3.5] ${checked ? 'opacity-100' : 'opacity-0'}`} />
+          <Check className={`w-3.5 h-3.5 stroke-[2.5] ${checked ? 'opacity-100' : 'opacity-0'}`} />
         </div>
       </div>
 
       {(label || description) && (
         <div className="flex flex-col">
           {label && (
-            <span className="text-xs font-bold text-stone-900 dark:text-stone-100 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">
+            <span className="text-xs font-medium text-[#191D1A] dark:text-[#F5F7F5] group-hover:text-emerald-700 dark:group-hover:text-emerald-400 transition-colors">
               {label}
             </span>
           )}
           {description && (
-            <span className="text-[11px] font-medium text-stone-500 dark:text-stone-400">
+            <span className="text-[11px] text-[#8A968F] mt-0.5">
               {description}
             </span>
           )}

@@ -7,10 +7,33 @@ export interface EmailSendResult {
   error?: string;
   provider: string;
   configured: boolean;
+  requiresDomainVerification?: boolean;
+  allowedTestingRecipient?: string;
 }
 
-// Resend sender configuration: uses verified onboarding@resend.dev by default or custom domain if configured
-const FROM_EMAIL = process.env.RESEND_FROM_EMAIL?.trim() || 'NoteCircle <onboarding@resend.dev>';
+/**
+ * Normalizes and cleans the sender address from environment variables.
+ * Handles cases where the value was configured as `RESEND_FROM_EMAIL=NoteCircle <...>` or with quotes.
+ */
+export function getResendFromEmail(): string {
+  let from = process.env.RESEND_FROM_EMAIL?.trim() || '';
+  if (from.startsWith('RESEND_FROM_EMAIL=')) {
+    from = from.substring('RESEND_FROM_EMAIL='.length).trim();
+  }
+  from = from.replace(/^["']|["']$/g, '').trim();
+  return from || 'NoteCircle <onboarding@resend.dev>';
+}
+
+/**
+ * Tracks the verified test email address associated with the Resend API key.
+ * On Resend free tier sandbox (onboarding@resend.dev), only this email can receive testing emails
+ * until a custom domain is verified at resend.com/domains.
+ */
+let verifiedResendOwnerEmail = 'vjagarwal1144@gmail.com';
+
+export function getVerifiedResendOwnerEmail(): string {
+  return verifiedResendOwnerEmail;
+}
 
 /**
  * Dispatches transactional email strictly using Resend as the sole email provider.
@@ -37,6 +60,8 @@ export async function sendTransactionalEmail(
     };
   }
 
+  const fromEmail = getResendFromEmail();
+
   try {
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
@@ -45,7 +70,7 @@ export async function sendTransactionalEmail(
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        from: FROM_EMAIL,
+        from: fromEmail,
         to: [to],
         subject,
         html: htmlContent,
@@ -65,6 +90,34 @@ export async function sendTransactionalEmail(
       };
     } else {
       const errMsg = data.message || (data.statusCode ? `Resend API Error ${data.statusCode}: ${data.name || 'Unknown'}` : `Resend returned HTTP ${res.status}`);
+
+      // Detect Resend test domain sandbox restriction:
+      const isSandboxRestriction = typeof errMsg === 'string' && (
+        errMsg.includes('You can only send testing emails to your own email address') ||
+        errMsg.includes('resend.com/domains')
+      );
+
+      if (isSandboxRestriction) {
+        // Dynamically parse and cache the verified test email from Resend's error message
+        const match = errMsg.match(/own email address \(([^)]+)\)/i);
+        if (match && match[1]) {
+          verifiedResendOwnerEmail = match[1].trim();
+        }
+
+        db.logEmail(to, type, 'BLOCKED_DOMAIN_VERIFICATION_REQUIRED', 'resend', errMsg);
+        console.warn(
+          `[RESEND EMAIL] Outgoing email "${subject}" to <${to}> held: Resend sandbox domain (${fromEmail}) requires a custom verified domain at resend.com/domains to deliver to arbitrary external recipients. Testing delivery is limited to verified address: ${verifiedResendOwnerEmail}.`
+        );
+        return {
+          success: false,
+          error: errMsg,
+          provider: 'resend',
+          configured: true,
+          requiresDomainVerification: true,
+          allowedTestingRecipient: verifiedResendOwnerEmail
+        };
+      }
+
       db.logEmail(to, type, 'FAILED', 'resend', errMsg);
       console.error(`[RESEND EMAIL] Failed to send email to <${to}>: ${errMsg}`);
       return {
@@ -214,7 +267,7 @@ export async function sendSecurityAlertEmail(email: string, title: string, messa
 
 // 5. Admin Notification of New Verified User
 export async function sendAdminNewUserAlert(newUser: User): Promise<EmailSendResult | null> {
-  const adminEmail = process.env.ADMIN_EMAIL?.trim() || 'vjagarwal1133@gmail.com';
+  const adminEmail = process.env.ADMIN_EMAIL?.trim() || verifiedResendOwnerEmail || 'vjagarwal1144@gmail.com';
   if (!adminEmail) return null;
 
   const subject = `[Admin Alert] New Verified User: @${newUser.username}`;

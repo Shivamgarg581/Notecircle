@@ -2,24 +2,18 @@ import React, { useState, useEffect } from 'react';
 import { 
   Clock, 
   MessageSquare, 
-  Heart, 
   Send, 
   Trash2, 
   Plus, 
-  Bell, 
-  Settings, 
   Calendar, 
-  MapPin, 
-  WifiOff, 
-  Wifi, 
-  Battery, 
-  Signal, 
-  Zap, 
-  UserCheck 
+  ChevronRight,
+  Sparkles
 } from 'lucide-react';
 import { api } from '../services/api.ts';
 import { localDb } from '../services/localDb.ts';
 import { useAuth } from '../context/AuthContext.tsx';
+import { UserAvatar } from './UserAvatar.tsx';
+import { WashiTape, NotebookEmptyIllustration, StampBadge } from './NotebookAssets.tsx';
 import type { Note } from '../types/index.ts';
 
 interface HomeFeedProps {
@@ -32,27 +26,25 @@ interface HomeFeedProps {
   onOpenSettings?: () => void;
 }
 
-const QUICK_REACTION_EMOJIS = ['❤️', '🔥', '👏', '☕', '🏕️', '💡'];
+const QUICK_REACTION_EMOJIS = ['❤️', '☕', '✨', '👏', '💡', '🌱'];
 
 export const HomeFeed: React.FC<HomeFeedProps> = ({
   onOpenCreateNote,
   onOpenAvailability,
   onOpenChatWithUser,
   onOpenProfile,
-  onNavigate,
-  onOpenNotifications,
-  onOpenSettings
+  onNavigate
 }) => {
-  const { currentUser, isOnline, updateAvailability, isUserOnline, unreadNotifsCount } = useAuth();
+  const { currentUser, isOnline, isUserOnline } = useAuth();
   const [notes, setNotes] = useState<Note[]>([]);
-  const [myActiveNote, setMyActiveNote] = useState<Note | null>(null);
   const [circleMembers, setCircleMembers] = useState<any[]>([]);
   const [conversations, setConversations] = useState<any[]>([]);
   const [plans, setPlans] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [expandedReplies, setExpandedReplies] = useState<Record<string, boolean>>({});
+  const [activeFilter, setActiveFilter] = useState<'all' | 'notes' | 'conversations' | 'plans'>('all');
   const [replyInput, setReplyInput] = useState<Record<string, string>>({});
   const [submittingReply, setSubmittingReply] = useState<Record<string, boolean>>({});
+  const [expandedReplies, setExpandedReplies] = useState<Record<string, boolean>>({});
   const [showCreatePlanModal, setShowCreatePlanModal] = useState(false);
   const [newPlanTitle, setNewPlanTitle] = useState('');
   const [newPlanTime, setNewPlanTime] = useState('');
@@ -61,16 +53,14 @@ export const HomeFeed: React.FC<HomeFeedProps> = ({
   const fetchFeed = async () => {
     try {
       if (navigator.onLine) {
-        const [feedRes, myRes, circleRes, plansRes, chatRes] = await Promise.all([
+        const [feedRes, circleRes, plansRes, chatRes] = await Promise.all([
           api.getFeed(),
-          currentUser ? api.getMyNotes() : Promise.resolve({ activeNotes: [] }),
           currentUser ? api.getCircleStatus() : Promise.resolve({ circleMembers: [] }),
           currentUser ? api.getPlans() : Promise.resolve({ plans: [] }),
           currentUser ? api.getConversations() : Promise.resolve({ conversations: [] })
         ]);
 
         setNotes(feedRes.notes || []);
-        setMyActiveNote(myRes.activeNotes?.[0] || null);
         setCircleMembers(circleRes.circleMembers || []);
         setPlans(plansRes.plans || []);
         setConversations(chatRes.conversations || []);
@@ -96,404 +86,476 @@ export const HomeFeed: React.FC<HomeFeedProps> = ({
   }, [currentUser, isOnline]);
 
   useEffect(() => {
-    const handlePresenceUpdate = (e: any) => {
-      const { userId, status } = e.detail || {};
-      if (!userId) return;
-      setCircleMembers((prev) =>
-        prev.map((m) => (m.id === userId ? { ...m, isOnline: status === 'online' } : m))
-      );
-    };
-
-    const handleNoteCreated = () => {
-      fetchFeed();
-    };
-
-    window.addEventListener('notecircle:presence_update', handlePresenceUpdate);
+    const handleNoteCreated = () => fetchFeed();
     window.addEventListener('notecircle:note_created', handleNoteCreated);
-    return () => {
-      window.removeEventListener('notecircle:presence_update', handlePresenceUpdate);
-      window.removeEventListener('notecircle:note_created', handleNoteCreated);
-    };
+    return () => window.removeEventListener('notecircle:note_created', handleNoteCreated);
   }, []);
 
   const handleToggleReaction = async (noteId: string, emoji: string) => {
     try {
       const res = await api.toggleReaction(noteId, emoji);
-      setNotes((prev) => prev.map((n) => (n.id === noteId ? res.note : n)));
-      if (myActiveNote?.id === noteId) {
-        setMyActiveNote(res.note);
-      }
-      await localDb.saveNote(res.note);
-    } catch (err: any) {
-      alert(err.message || 'Failed to update reaction');
+      setNotes((prev) =>
+        prev.map((n) => (n.id === noteId ? res.note : n))
+      );
+    } catch (err) {
+      console.error('Reaction failed:', err);
     }
   };
 
   const handleSendReply = async (noteId: string) => {
-    const text = (replyInput[noteId] || '').trim();
+    const text = replyInput[noteId]?.trim();
     if (!text) return;
 
     setSubmittingReply((prev) => ({ ...prev, [noteId]: true }));
     try {
       const res = await api.addReply(noteId, text);
-      setNotes((prev) => prev.map((n) => (n.id === noteId ? res.note : n)));
+      setNotes((prev) =>
+        prev.map((n) => (n.id === noteId ? res.note : n))
+      );
       setReplyInput((prev) => ({ ...prev, [noteId]: '' }));
-      await localDb.saveNote(res.note);
-    } catch (err: any) {
-      alert(err.message || 'Failed to post reply');
+    } catch (err) {
+      console.error('Reply failed:', err);
     } finally {
       setSubmittingReply((prev) => ({ ...prev, [noteId]: false }));
     }
   };
 
   const handleDeleteNote = async (noteId: string) => {
-    if (!confirm('Delete this note? It will disappear from your circle.')) return;
     try {
       await api.deleteNote(noteId);
       setNotes((prev) => prev.filter((n) => n.id !== noteId));
-      if (myActiveNote?.id === noteId) setMyActiveNote(null);
-      await localDb.deleteNote(noteId);
-    } catch (err: any) {
-      alert(err.message || 'Failed to delete');
+    } catch (err) {
+      console.error('Delete note failed:', err);
     }
   };
 
-  const formatExpiration = (expiresAt: string | null) => {
+  const formatExpiration = (expiresAt?: string | null) => {
     if (!expiresAt) return 'Permanent';
-    const diffMs = new Date(expiresAt).getTime() - Date.now();
-    if (diffMs <= 0) return 'Expired';
-    const hours = Math.floor(diffMs / (1000 * 60 * 60));
-    const mins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-    if (hours > 24) return `${Math.floor(hours / 24)}d left`;
-    if (hours > 0) return `${hours}h ${mins}m`;
-    return `${mins}m`;
+    const remaining = Math.max(0, new Date(expiresAt).getTime() - Date.now());
+    const hours = Math.floor(remaining / (1000 * 60 * 60));
+    const mins = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
+    if (hours > 0) return `${hours}h remaining`;
+    return `${mins}m remaining`;
   };
 
-  const userInitial = (currentUser?.displayName || 'L')[0].toUpperCase();
+  const greeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good morning';
+    if (hour < 18) return 'Good afternoon';
+    return 'Good evening';
+  };
+
+  const activeCircleMembers = circleMembers.filter((m) => isUserOnline(m.id));
 
   return (
-    <div className="min-h-screen bg-[#FAF7F0] dark:bg-[#0D0D12] text-stone-950 dark:text-stone-50 pb-28 sm:pb-16 font-sans">
-      <div className="max-w-md sm:max-w-xl mx-auto px-3 sm:px-6 pt-3 space-y-4">
-        {/* Offline Alert */}
-        {!isOnline && (
-          <div className="p-2.5 bg-[#FFC72C] border-2.5 border-black rounded-2xl flex items-center gap-2 text-xs font-black text-black shadow-[3px_3px_0px_#000]">
-            <WifiOff className="w-4 h-4 text-black shrink-0" />
-            <span>Offline: Notes and messages cached locally.</span>
+    <div className="max-w-2xl mx-auto px-4 sm:px-6 py-5 sm:py-7 space-y-6">
+      
+      {/* Intimate Greeting & Date Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="px-2 py-0.5 rounded-lg bg-[#FFCA05] text-[#111111] border-1.5 border-[#111111] text-[10px] font-black uppercase tracking-wider shadow-[1.5px_1.5px_0px_#111111]">
+              {new Date().toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
+            </span>
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-black font-display text-[#111111] dark:text-[#F5F2EB] tracking-tight">
+            {greeting()}, {currentUser?.displayName?.split(' ')[0] || currentUser?.username || 'Friend'}
+          </h1>
+        </div>
+
+        {currentUser?.availability && (
+          <button
+            onClick={onOpenAvailability}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[var(--card-surface)] border-2 border-[#111111] dark:border-[#3E3E4A] text-xs font-black text-[#111111] dark:text-[#F5F2EB] shadow-[2.5px_2.5px_0px_#111111] hover:translate-x-[-1px] hover:translate-y-[-1px] transition-all cursor-pointer"
+            title="Update your current status"
+          >
+            <span className="text-base select-none">{currentUser.availability.emoji}</span>
+            <span className="hidden sm:inline">{currentUser.availability.label}</span>
+          </button>
+        )}
+      </div>
+
+      {/* Active People in Circle Carousel */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between text-xs">
+          <span className="font-black text-[#111111] dark:text-[#F5F2EB] uppercase tracking-wider text-[11px]">
+            Circle Members Online
+          </span>
+          <span className="text-[10px] font-bold text-[#6B6863] dark:text-[#C8C5BE]">
+            {activeCircleMembers.length} active
+          </span>
+        </div>
+
+        {activeCircleMembers.length > 0 ? (
+          <div className="flex items-center gap-3 overflow-x-auto pb-2 scrollbar-none">
+            {activeCircleMembers.map((member) => (
+              <button
+                key={member.id}
+                onClick={() => onOpenProfile?.(member.username)}
+                className="flex flex-col items-center gap-1.5 shrink-0 group cursor-pointer"
+              >
+                <div className="p-0.5 rounded-full border-2 border-[#111111] shadow-[2px_2px_0px_#111111] group-hover:scale-105 transition-transform">
+                  <UserAvatar
+                    src={member.avatarUrl}
+                    name={member.displayName || member.username}
+                    size="md"
+                    isOnline={true}
+                  />
+                </div>
+                <span className="text-[11px] font-bold text-[#111111] dark:text-[#F5F2EB] max-w-[68px] truncate">
+                  {member.displayName?.split(' ')[0] || member.username}
+                </span>
+              </button>
+            ))}
+          </div>
+        ) : (
+          <div className="p-3.5 bg-[var(--card-surface)] rounded-2xl border-2 border-[#111111] dark:border-[#3E3E4A] shadow-[2px_2px_0px_#111111] text-center">
+            <p className="text-xs font-semibold text-[#4A4742] dark:text-[#C8C5BE]">
+              No circle connections active right now.
+            </p>
           </div>
         )}
+      </div>
 
-        {/* Main Header matching reference image */}
-        <div className="flex items-start justify-between pt-1">
+      {/* Segmented Filter Bar */}
+      <div className="flex items-center gap-1.5 p-1 bg-[var(--card-surface-subtle)] rounded-2xl border-2 border-[#111111] dark:border-[#3E3E4A] shadow-[2px_2px_0px_#111111] text-xs font-black">
+        <button
+          onClick={() => setActiveFilter('all')}
+          className={`flex-1 py-1.5 px-3 rounded-xl transition-all cursor-pointer text-center ${
+            activeFilter === 'all'
+              ? 'bg-[#FFCA05] text-[#111111] border-1.5 border-[#111111] shadow-[1px_1px_0px_#111111]'
+              : 'text-[#4A4742] dark:text-[#C8C5BE] hover:text-[#111111]'
+          }`}
+        >
+          All
+        </button>
+        <button
+          onClick={() => setActiveFilter('notes')}
+          className={`flex-1 py-1.5 px-3 rounded-xl transition-all cursor-pointer text-center ${
+            activeFilter === 'notes'
+              ? 'bg-[#FFCA05] text-[#111111] border-1.5 border-[#111111] shadow-[1px_1px_0px_#111111]'
+              : 'text-[#4A4742] dark:text-[#C8C5BE] hover:text-[#111111]'
+          }`}
+        >
+          Notes ({notes.length})
+        </button>
+        <button
+          onClick={() => setActiveFilter('conversations')}
+          className={`flex-1 py-1.5 px-3 rounded-xl transition-all cursor-pointer text-center ${
+            activeFilter === 'conversations'
+              ? 'bg-[#FFCA05] text-[#111111] border-1.5 border-[#111111] shadow-[1px_1px_0px_#111111]'
+              : 'text-[#4A4742] dark:text-[#C8C5BE] hover:text-[#111111]'
+          }`}
+        >
+          Chat ({conversations.length})
+        </button>
+        <button
+          onClick={() => setActiveFilter('plans')}
+          className={`flex-1 py-1.5 px-3 rounded-xl transition-all cursor-pointer text-center ${
+            activeFilter === 'plans'
+              ? 'bg-[#FFCA05] text-[#111111] border-1.5 border-[#111111] shadow-[1px_1px_0px_#111111]'
+              : 'text-[#4A4742] dark:text-[#C8C5BE] hover:text-[#111111]'
+          }`}
+        >
+          Plans ({plans.length})
+        </button>
+      </div>
+
+      {/* Tactile Post Note Action Banner */}
+      <div 
+        onClick={onOpenCreateNote}
+        className="p-4 sm:p-5 rounded-3xl bg-[#FFCA05] border-2.5 border-[#111111] shadow-[4px_4px_0px_#111111] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[5px_5px_0px_#111111] active:translate-x-[2px] active:translate-y-[2px] active:shadow-[1px_1px_0px_#111111] transition-all cursor-pointer group flex items-center justify-between gap-4 select-none relative overflow-hidden"
+      >
+        <div className="flex items-center gap-3.5">
+          <div className="w-11 h-11 rounded-2xl bg-[#FAF7F0] border-2 border-[#111111] shadow-[2px_2px_0px_#111111] flex items-center justify-center text-xl shrink-0">
+            ✍️
+          </div>
           <div>
-            <h1 
-              className="text-4xl sm:text-5xl font-black text-black dark:text-white tracking-tight font-display select-none leading-none"
-              style={{
-                textShadow: '3.5px 3.5px 0px #FFC72C'
-              }}
-            >
-              NoteCircle
-            </h1>
-            <h2 className="text-2xl sm:text-3xl font-black text-black dark:text-white font-display mt-1.5 leading-none">
-              Home
+            <p className="text-sm font-black text-[#111111] tracking-tight uppercase">
+              Write a Note for Your Circle
+            </p>
+            <p className="text-xs font-semibold text-[#111111]/80 mt-0.5">
+              Auto-expires in 24 hours · Shared with approved people only
+            </p>
+          </div>
+        </div>
+        <div className="w-10 h-10 rounded-2xl bg-[#111111] text-[#FFCA05] flex items-center justify-center shrink-0 shadow-[2px_2px_0px_#111111] group-hover:scale-105 transition-transform">
+          <Plus className="w-6 h-6 stroke-[3]" />
+        </div>
+      </div>
+
+      {/* Notes Stream */}
+      {(activeFilter === 'all' || activeFilter === 'notes') && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-base font-black font-display text-[#111111] dark:text-[#F5F2EB] uppercase tracking-wide">
+              Circle Notes
             </h2>
-          </div>
-
-          {/* Top Right: Double-Ringed Avatar & Neo-Brutalist Bell & Settings Button */}
-          <div className="flex items-center gap-2 pt-1">
-            {/* Double-Ring Avatar */}
             <button
-              onClick={() => onNavigate?.('profile')}
-              className="w-11 h-11 rounded-full border-3 border-black p-0.5 bg-[#FFC72C] flex items-center justify-center font-black text-black text-base shadow-[2px_2px_0px_#000] cursor-pointer hover:scale-105 transition-transform"
-              title="My Profile"
+              onClick={() => onNavigate?.('notes')}
+              className="text-xs font-black text-[#111111] dark:text-[#FFCA05] hover:underline cursor-pointer flex items-center gap-1 uppercase tracking-wider"
             >
-              <div className="w-full h-full rounded-full border-2 border-black flex items-center justify-center bg-[#FFC72C]">
-                {userInitial}
-              </div>
-            </button>
-
-            {/* Angular Neo-Brutalist Bell with '1' badge */}
-            <button
-              onClick={onOpenNotifications}
-              className="relative p-2.5 bg-white dark:bg-[#1A1A24] border-2.5 border-black rounded-xl shadow-[2.5px_2.5px_0px_#000] cursor-pointer active:translate-x-0.5 active:translate-y-0.5 transition-transform"
-              title="Notifications"
-            >
-              <Bell className="w-5 h-5 fill-black dark:fill-white stroke-black dark:stroke-white stroke-1" />
-              <span className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-[#FFC72C] border-2 border-black rounded-full text-[10px] font-black text-black flex items-center justify-center shadow-[1px_1px_0px_#000]">
-                {unreadNotifsCount > 0 ? unreadNotifsCount : 1}
-              </span>
-            </button>
-
-            {/* Prominent Settings Button */}
-            <button
-              onClick={onOpenSettings}
-              className="p-2.5 bg-white dark:bg-[#1A1A24] border-2.5 border-black rounded-xl shadow-[2.5px_2.5px_0px_#000] cursor-pointer active:translate-x-0.5 active:translate-y-0.5 transition-transform"
-              title="Settings & Privacy"
-            >
-              <Settings className="w-5 h-5 stroke-[2.5] text-black dark:text-white" />
+              <span>Archive</span>
+              <ChevronRight className="w-3.5 h-3.5" />
             </button>
           </div>
-        </div>
 
-        {/* Pill Navigation Buttons under Home */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none pt-1">
-          <button
-            onClick={() => onNavigate?.('notes')}
-            className="px-4 sm:px-5 py-2 rounded-full bg-[#7eedb4] dark:bg-[#5cd499] text-black font-black text-xs sm:text-sm border-2.5 border-black shadow-[3px_3px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-transform whitespace-nowrap cursor-pointer hover:brightness-105"
-          >
-            My Notes
-          </button>
-
-          <button
-            onClick={() => onNavigate?.('chat')}
-            className="px-4 sm:px-5 py-2 rounded-full bg-[#4353ff] dark:bg-[#3243f0] text-black dark:text-white font-black text-xs sm:text-sm border-2.5 border-black shadow-[3px_3px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-transform whitespace-nowrap cursor-pointer hover:brightness-105"
-          >
-            Messages
-          </button>
-
-          <button
-            onClick={() => onNavigate?.('connections')}
-            className="px-4 sm:px-5 py-2 rounded-full bg-[#ff6969] dark:bg-[#fa5555] text-black font-black text-xs sm:text-sm border-2.5 border-black shadow-[3px_3px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-transform whitespace-nowrap cursor-pointer hover:brightness-105"
-          >
-            Circles
-          </button>
-
-          <button
-            onClick={onOpenSettings}
-            className="px-4 sm:px-5 py-2 rounded-full bg-[#FFC72C] dark:bg-[#e6b01e] text-black font-black text-xs sm:text-sm border-2.5 border-black shadow-[3px_3px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-transform whitespace-nowrap cursor-pointer hover:brightness-105"
-          >
-            Settings
-          </button>
-        </div>
-
-        {/* Section Divider Line */}
-        <div className="border-t-2.5 border-black/80 dark:border-white/20 pt-1" />
-
-        {/* Active People Section */}
-        {(() => {
-          const activeCircleMembers = circleMembers.filter((m) => m.isOnline || isUserOnline(m.id));
-          return (
-            <div className="space-y-2.5">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm sm:text-base font-black text-black dark:text-white font-display">
-                  Active People <span className="font-bold text-xs opacity-80">({activeCircleMembers.length} active)</span>
-                </h3>
-                {currentUser?.availability && (
-                  <button
-                    onClick={onOpenAvailability}
-                    className="text-[11px] font-black underline cursor-pointer hover:text-amber-600"
-                  >
-                    My Vibe: {currentUser.availability.emoji} {currentUser.availability.label}
-                  </button>
-                )}
-              </div>
-
-              {activeCircleMembers.length > 0 ? (
-                <div className="flex items-center gap-3 overflow-x-auto pb-2 pt-1 scrollbar-none">
-                  {activeCircleMembers.map((member) => (
-                    <div
-                      key={member.id}
-                      onClick={() => onOpenProfile?.(member.username)}
-                      className="flex items-center shrink-0 cursor-pointer group active:scale-95 transition-transform"
-                    >
-                      <div className="relative z-10">
-                        <div className="w-11 h-11 rounded-full bg-[#FFC72C] text-black border-2.5 border-black flex items-center justify-center font-black text-sm shadow-[2px_2px_0px_#000]">
-                          {(member.displayName || 'U')[0].toUpperCase()}
-                        </div>
-                        <span className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-[#4ade80] rounded-full border-2 border-black" />
-                      </div>
-                      <div className="-ml-2 pl-3 pr-2.5 py-0.5 bg-[#7eedb4] text-black font-black text-[11px] rounded-r-full border-2 border-black border-l-0 shadow-[2px_2px_0px_#000]">
-                        {member.availability?.emoji || 'online'}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="p-4 bg-white dark:bg-[#161622] rounded-2xl border-2.5 border-black shadow-[3px_3px_0px_#000] text-center">
-                  <p className="text-xs font-black text-stone-900 dark:text-stone-100">No active people yet</p>
-                  <p className="text-[11px] font-bold text-stone-500 mt-0.5">When connections in your circle come online or post a vibe, they'll appear here.</p>
-                </div>
-              )}
-            </div>
-          );
-        })()}
-
-        {/* Massive Tilted "Create Note +" Banner */}
-        <div className="pt-1">
-          <div
-            onClick={onOpenCreateNote}
-            className="w-full bg-[#101014] text-white border-3 border-black rounded-2xl py-3 px-5 sm:px-6 shadow-[5px_5px_0px_#000] -rotate-1 hover:rotate-0 transition-transform cursor-pointer flex items-center justify-between group active:scale-[0.99]"
-          >
-            <span className="font-display font-black text-3xl sm:text-4xl tracking-tight text-white select-none">
-              Create Note
-            </span>
-            <span className="font-display font-black text-3xl sm:text-4xl text-white group-hover:scale-125 transition-transform">
-              +
-            </span>
-          </div>
-
-          {/* Big Black Arrow pointing down towards note cards */}
-          <div className="flex justify-end pr-8 -mt-2 -mb-2 pointer-events-none select-none">
-            <svg 
-              className="w-10 h-10 text-black dark:text-white fill-current transform rotate-[-20deg]" 
-              viewBox="0 0 24 24"
-            >
-              <path d="M12 2v14M5 12l7 7 7-7" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-            </svg>
-          </div>
-        </div>
-
-        {/* Real Note Cards Grid */}
-        <div className="pt-1">
           {notes.length > 0 ? (
-            <div className="grid grid-cols-2 gap-3">
-              {notes.map((note, idx) => {
-                const collars = [
-                  { name: note.categoryLabel || 'Circle', bg: 'bg-[#ff6969] text-black' },
-                  { name: note.categoryLabel || 'Vibe', bg: 'bg-[#9faaff] text-black' },
-                  { name: note.categoryLabel || 'Notes', bg: 'bg-[#7eedb4] text-black' },
-                  { name: note.categoryLabel || 'Idea', bg: 'bg-[#4353ff] text-white' }
-                ];
-                const collar = collars[idx % collars.length];
+            <div className="space-y-4">
+              {notes.map((note) => {
                 const isMine = currentUser && note.userId === currentUser.id;
+                const isExpanded = !!expandedReplies[note.id];
+                const replies = note.replies || [];
 
                 return (
                   <div 
                     key={note.id}
-                    className="border-3 border-black rounded-2xl bg-[#FFC72C] shadow-[4px_4px_0px_#000] overflow-hidden flex flex-col justify-between"
+                    className="p-5 rounded-3xl bg-[var(--card-surface)] border-2.5 border-[#111111] dark:border-[#3E3E4A] shadow-[4px_4px_0px_#111111] space-y-3.5 relative"
                   >
-                    <div>
-                      <div className={`${collar.bg} font-black text-xs px-3 py-1.5 border-b-2.5 border-black flex items-center justify-between`}>
-                        <span className="truncate max-w-[90px]">{note.emoji} {collar.name}</span>
+                    {/* Washi-Tape Sticker */}
+                    <div className="flex items-center justify-between">
+                      <div 
+                        onClick={() => onOpenProfile?.(note.author?.username || '')}
+                        className="flex items-center gap-2.5 cursor-pointer group"
+                      >
+                        <UserAvatar
+                          src={note.author?.avatarUrl}
+                          name={note.author?.displayName || note.author?.username || 'Circle'}
+                          size="sm"
+                        />
+                        <div>
+                          <p className="text-xs font-black text-[#111111] dark:text-[#F5F2EB] group-hover:underline">
+                            {note.author?.displayName || note.author?.username}
+                          </p>
+                          <div className="flex items-center gap-1.5 text-[11px] font-semibold text-[#6B6863] dark:text-[#C8C5BE]">
+                            <span>@{note.author?.username}</span>
+                            <span>·</span>
+                            <span className="flex items-center gap-1">
+                              <Clock className="w-3 h-3 stroke-[2.5]" />
+                              {formatExpiration(note.expiresAt)}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        {note.categoryLabel && (
+                          <WashiTape 
+                            color="yellow" 
+                            label={`${note.emoji || ''} ${note.categoryLabel}`} 
+                          />
+                        )}
+
                         {isMine && (
                           <button
                             onClick={() => handleDeleteNote(note.id)}
-                            className="text-stone-900 hover:text-rose-700 cursor-pointer"
+                            className="text-[#6B6863] hover:text-rose-600 transition-colors p-1 rounded-lg cursor-pointer"
                             title="Delete note"
                           >
-                            <Trash2 className="w-3 h-3" />
+                            <Trash2 className="w-4 h-4 stroke-[2]" />
                           </button>
                         )}
                       </div>
-
-                      <div className="p-3 text-black space-y-1.5">
-                        <div className="flex items-center justify-between">
-                          <span className="text-[10px] font-black text-black">@{note.author?.username || 'circle'}</span>
-                          <span className="text-[9px] font-bold opacity-75">{formatExpiration(note.expiresAt)}</span>
-                        </div>
-                        <p className="text-[11px] sm:text-xs font-bold leading-tight line-clamp-3">
-                          "{note.text}"
-                        </p>
-                      </div>
                     </div>
 
-                    <div className="p-3 pt-0 space-y-2">
-                      <div className="flex items-center gap-1 overflow-x-auto scrollbar-none pt-1 border-t-1.5 border-black/20">
-                        {QUICK_REACTION_EMOJIS.slice(0, 4).map((emoji) => (
+                    {/* Note Content */}
+                    <p className="text-sm sm:text-base text-[#111111] dark:text-[#F5F2EB] leading-relaxed whitespace-pre-wrap font-medium">
+                      {note.text}
+                    </p>
+
+                    {/* Reactions & Reply Toggle */}
+                    <div className="pt-2 border-t-2 border-black/10 dark:border-white/10 flex items-center justify-between flex-wrap gap-2">
+                      {/* Reaction Buttons */}
+                      <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none">
+                        {QUICK_REACTION_EMOJIS.map((emoji) => {
+                          const hasReacted = note.reactions?.some((r) => r.emoji === emoji && r.userId === currentUser?.id);
+                          const count = note.reactions?.filter((r) => r.emoji === emoji).length || 0;
+                          return (
+                            <button
+                              key={emoji}
+                              onClick={() => handleToggleReaction(note.id, emoji)}
+                              className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1 border-1.5 ${
+                                hasReacted
+                                  ? 'bg-[#FFCA05] text-[#111111] border-[#111111] shadow-[1.5px_1.5px_0px_#111111]'
+                                  : 'bg-[var(--card-surface-subtle)] text-[#4A4742] dark:text-[#C8C5BE] border-transparent hover:border-[#111111]'
+                              }`}
+                            >
+                              <span>{emoji}</span>
+                              {count > 0 && <span className="text-[10px] font-black">{count}</span>}
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      {/* Reply Toggle */}
+                      <button
+                        onClick={() => setExpandedReplies((prev) => ({ ...prev, [note.id]: !prev[note.id] }))}
+                        className="text-xs font-black text-[#111111] dark:text-[#F5F2EB] flex items-center gap-1.5 cursor-pointer py-1 px-2.5 rounded-xl border-1.5 border-[#111111] dark:border-[#3E3E4A] bg-[var(--card-surface-subtle)] shadow-[1.5px_1.5px_0px_#111111]"
+                      >
+                        <MessageSquare className="w-3.5 h-3.5 stroke-[2.5]" />
+                        <span>{replies.length > 0 ? `${replies.length} replies` : 'Reply'}</span>
+                      </button>
+                    </div>
+
+                    {/* Inline Expandable Replies */}
+                    {isExpanded && (
+                      <div className="pt-3 border-t-2 border-black/10 dark:border-white/10 space-y-3">
+                        {replies.length > 0 && (
+                          <div className="space-y-2 pl-3 border-l-2.5 border-[#FFCA05]">
+                            {replies.map((reply: any, rIdx: number) => (
+                              <div key={rIdx} className="text-xs space-y-0.5">
+                                <div className="flex items-center gap-1.5 text-[#6B6863] dark:text-[#C8C5BE]">
+                                  <span className="font-black text-[#111111] dark:text-[#F5F2EB]">
+                                    {reply.author?.displayName || reply.author?.username || 'Friend'}
+                                  </span>
+                                  <span>·</span>
+                                  <span className="text-[10px] font-bold">
+                                    {new Date(reply.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                  </span>
+                                </div>
+                                <p className="text-[#111111] dark:text-[#F5F2EB] font-medium">
+                                  {reply.text}
+                                </p>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Reply Input Form */}
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="text"
+                            value={replyInput[note.id] || ''}
+                            onChange={(e) => setReplyInput((prev) => ({ ...prev, [note.id]: e.target.value }))}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' && !e.shiftKey) {
+                                e.preventDefault();
+                                handleSendReply(note.id);
+                              }
+                            }}
+                            placeholder="Write a private reply..."
+                            className="neo-input text-xs py-2 px-3 flex-1"
+                          />
                           <button
-                            key={emoji}
-                            onClick={() => handleToggleReaction(note.id, emoji)}
-                            className="px-1.5 py-0.5 rounded-md bg-white/70 border border-black text-[10px] font-black hover:bg-white active:scale-95 cursor-pointer shrink-0"
+                            onClick={() => handleSendReply(note.id)}
+                            disabled={submittingReply[note.id] || !(replyInput[note.id] || '').trim()}
+                            className="p-2.5 rounded-xl bg-[#FFCA05] text-[#111111] border-2 border-[#111111] shadow-[2px_2px_0px_#111111] disabled:opacity-40 cursor-pointer"
                           >
-                            {emoji} {note.reactions?.find(r => r.emoji === emoji) ? '•' : ''}
+                            <Send className="w-3.5 h-3.5 stroke-[2.5]" />
                           </button>
-                        ))}
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </div>
                 );
               })}
             </div>
           ) : (
-            <div className="p-6 bg-white dark:bg-[#161622] rounded-2xl border-3 border-black shadow-[4px_4px_0px_#000] text-center space-y-2">
-              <p className="text-sm font-black text-black dark:text-white font-display">No notes yet</p>
-              <p className="text-xs font-bold text-stone-600 dark:text-stone-300">Post an ephemeral note to share with your trusted circle.</p>
-              <button
-                onClick={onOpenCreateNote}
-                className="mt-2 px-4 py-2 rounded-xl bg-amber-400 text-black border-2 border-black font-black text-xs shadow-[2px_2px_0px_#000] cursor-pointer hover:bg-amber-300"
-              >
-                + Create Your First Note
-              </button>
-            </div>
+            <NotebookEmptyIllustration
+              onAction={onOpenCreateNote}
+              actionText="Post Your First Note"
+            />
           )}
         </div>
+      )}
 
-        {/* Chat Preview Section */}
-        <div className="space-y-2.5 pt-2">
-          <h3 className="text-base sm:text-lg font-black text-black dark:text-white font-display">
-            Chat Preview
-          </h3>
+      {/* Chat Preview Section */}
+      {(activeFilter === 'all' || activeFilter === 'conversations') && (
+        <div className="space-y-3 pt-2">
+          <div className="flex items-center justify-between">
+            <h2 className="text-base font-black font-display text-[#111111] dark:text-[#F5F2EB] uppercase tracking-wide">
+              Recent Conversations
+            </h2>
+            <button
+              onClick={() => onNavigate?.('chat')}
+              className="text-xs font-black text-[#111111] dark:text-[#FFCA05] hover:underline cursor-pointer flex items-center gap-1 uppercase tracking-wider"
+            >
+              <span>Open Chat</span>
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
 
           {conversations.length > 0 ? (
-            <div className="border-3 border-black rounded-2xl bg-white dark:bg-[#161622] divide-y-2.5 divide-black shadow-[4px_4px_0px_#000] overflow-hidden">
-              {conversations.slice(0, 4).map((conv) => {
+            <div className="rounded-3xl bg-[var(--card-surface)] border-2.5 border-[#111111] dark:border-[#3E3E4A] shadow-[4px_4px_0px_#111111] divide-y-2 divide-black/10 dark:divide-white/10 overflow-hidden">
+              {conversations.slice(0, 3).map((conv) => {
                 const other = conv.participants?.find((p: any) => p.id !== currentUser?.id) || conv.participants?.[0];
                 const lastMsg = conv.lastMessage?.text || 'Encrypted conversation';
                 return (
                   <div
                     key={conv.id}
-                    onClick={() => onOpenChatWithUser ? onOpenChatWithUser(other?.id) : onNavigate?.('chat')}
-                    className="p-3.5 flex items-center justify-between gap-3 hover:bg-[#F9F8F3] dark:hover:bg-[#1E1E2C] transition-colors cursor-pointer group"
+                    onClick={() => other?.id && (onOpenChatWithUser ? onOpenChatWithUser(other.id) : onNavigate?.('chat'))}
+                    className="p-3.5 flex items-center justify-between gap-3 hover:bg-[#FFCA05]/20 transition-colors cursor-pointer"
                   >
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-11 h-11 rounded-full bg-[#7eedb4] text-black border-2 border-black flex items-center justify-center font-black text-base shadow-[1.5px_1.5px_0px_#000] shrink-0">
-                        {(other?.displayName || 'C')[0]}
-                      </div>
+                      <UserAvatar
+                        src={other?.avatarUrl}
+                        name={other?.displayName || 'Friend'}
+                        size="md"
+                      />
                       <div className="min-w-0">
-                        <h4 className="font-black text-xs sm:text-sm text-black dark:text-white truncate">
+                        <p className="font-black text-xs text-[#111111] dark:text-[#F5F2EB] truncate">
                           {conv.title || other?.displayName}
-                        </h4>
-                        <p className="text-[11px] sm:text-xs font-bold text-stone-600 dark:text-stone-300 truncate mt-0.5">
+                        </p>
+                        <p className="text-xs font-medium text-[#4A4742] dark:text-[#C8C5BE] truncate mt-0.5">
                           {lastMsg}
                         </p>
                       </div>
                     </div>
-                    <span className="text-[10px] font-bold text-stone-500 dark:text-stone-400 shrink-0">
-                      Active
+                    <span className="text-[10px] font-black uppercase text-[#111111] dark:text-[#FFCA05] bg-[#FFCA05]/20 dark:bg-[#FFCA05]/10 px-2 py-0.5 rounded-lg border border-[#111111] shrink-0">
+                      E2EE
                     </span>
                   </div>
                 );
               })}
             </div>
           ) : (
-            <div className="p-5 bg-white dark:bg-[#161622] rounded-2xl border-3 border-black shadow-[4px_4px_0px_#000] text-center space-y-1.5">
-              <p className="text-xs font-black text-black dark:text-white font-display">No conversations yet</p>
-              <p className="text-[11px] font-bold text-stone-600 dark:text-stone-300">Private messages are end-to-end encrypted in your circle.</p>
+            <div className="p-6 rounded-3xl bg-[var(--card-surface)] border-2.5 border-[#111111] dark:border-[#3E3E4A] shadow-[4px_4px_0px_#111111] text-center space-y-2">
+              <p className="text-xs font-black text-[#111111] dark:text-[#F5F2EB]">
+                No active conversations yet
+              </p>
+              <p className="text-xs text-[#4A4742] dark:text-[#C8C5BE]">
+                Private 1:1 messages are end-to-end encrypted with zero server plaintext.
+              </p>
               <button
                 onClick={() => onNavigate?.('chat')}
-                className="mt-1 px-3.5 py-1.5 rounded-xl bg-amber-400 text-black border-2 border-black font-black text-xs shadow-[2px_2px_0px_#000] cursor-pointer"
+                className="neo-btn py-1.5 px-3 text-xs"
               >
-                Start a Private Chat
+                Start a Chat
               </button>
             </div>
           )}
         </div>
+      )}
 
-        {/* Circle Plans & Meetups Quick Card */}
-        <div className="border-3 border-black rounded-2xl bg-white dark:bg-[#161622] p-4 shadow-[4px_4px_0px_#000] space-y-3">
+      {/* Circle Plans & Meetups Card */}
+      {(activeFilter === 'all' || activeFilter === 'plans') && (
+        <div className="rounded-3xl bg-[var(--card-surface)] border-2.5 border-[#111111] dark:border-[#3E3E4A] shadow-[4px_4px_0px_#111111] p-5 space-y-3.5">
           <div className="flex items-center justify-between">
-            <h4 className="font-black text-xs sm:text-sm text-black dark:text-white uppercase tracking-wider flex items-center gap-2 font-display">
-              <Calendar className="w-4 h-4 text-indigo-600" />
-              <span>Circle Meetups & Plans</span>
-            </h4>
+            <div className="flex items-center gap-2">
+              <Calendar className="w-4 h-4 text-[#111111] dark:text-[#FFCA05]" />
+              <h3 className="text-sm font-black font-display text-[#111111] dark:text-[#F5F2EB] uppercase tracking-wide">
+                Circle Meetups & Plans
+              </h3>
+            </div>
             <button
               onClick={() => setShowCreatePlanModal(true)}
-              className="px-2.5 py-1 rounded-xl bg-[#FFC72C] text-black border-2 border-black shadow-[2px_2px_0px_#000] text-[10px] font-black uppercase cursor-pointer"
+              className="text-xs font-black text-[#111111] dark:text-[#FFCA05] hover:underline cursor-pointer uppercase tracking-wider"
             >
-              + New Plan
+              + Propose Plan
             </button>
           </div>
 
           {plans.length === 0 ? (
-            <p className="text-xs font-medium text-stone-500 dark:text-stone-400 italic">
-              No plans scheduled yet. Tap '+ New Plan' to propose dinner, games or trips.
+            <p className="text-xs text-[#4A4742] dark:text-[#C8C5BE]">
+              No plans scheduled yet. Coordinate coffee, dinner, or a walk with your circle.
             </p>
           ) : (
             <div className="space-y-2">
-              {plans.slice(0, 2).map((p) => (
-                <div key={p.id} className="p-3 bg-stone-50 dark:bg-stone-850 rounded-xl border-2 border-black flex items-center justify-between">
+              {plans.slice(0, 3).map((p) => (
+                <div key={p.id} className="p-3 bg-[var(--card-surface-subtle)] rounded-2xl border-1.5 border-[#111111] flex items-center justify-between gap-3 shadow-[2px_2px_0px_#111111]">
                   <div className="min-w-0">
-                    <p className="text-xs font-black text-black dark:text-white truncate">{p.title}</p>
-                    <p className="text-[10px] font-bold text-stone-500 mt-0.5">{p.scheduledTime} {p.location && `· ${p.location}`}</p>
+                    <p className="text-xs font-black text-[#111111] dark:text-[#F5F2EB] truncate">{p.title}</p>
+                    <p className="text-[11px] font-semibold text-[#4A4742] dark:text-[#C8C5BE] mt-0.5">{p.scheduledTime} {p.location && `· ${p.location}`}</p>
                   </div>
                   <button
                     onClick={async () => {
@@ -501,7 +563,7 @@ export const HomeFeed: React.FC<HomeFeedProps> = ({
                       const res = await api.getPlans();
                       setPlans(res.plans);
                     }}
-                    className="px-2.5 py-1 rounded-lg text-[10px] font-black bg-[#7eedb4] text-black border-1.5 border-black cursor-pointer shadow-[1px_1px_0px_#000]"
+                    className="px-3 py-1 rounded-xl text-xs font-black bg-[#FFCA05] text-[#111111] border-1.5 border-[#111111] shadow-[1px_1px_0px_#111111] cursor-pointer shrink-0"
                   >
                     Going
                   </button>
@@ -510,56 +572,61 @@ export const HomeFeed: React.FC<HomeFeedProps> = ({
             </div>
           )}
         </div>
-
-      </div>
+      )}
 
       {/* Create Plan Modal */}
       {showCreatePlanModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-950/70 backdrop-blur-xs">
-          <div className="neo-card bg-white dark:bg-[#161622] w-full max-w-md p-6 shadow-[8px_8px_0px_0px_#121217] space-y-4 animate-in fade-in zoom-in-95">
-            <h3 className="text-base font-black text-stone-950 dark:text-stone-50 flex items-center gap-2 font-display">
-              <Calendar className="w-5 h-5 text-amber-500" />
-              <span>Create Circle Plan</span>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#111111]/70 backdrop-blur-sm animate-in fade-in">
+          <div className="w-full max-w-md p-6 rounded-3xl bg-[var(--card-surface)] border-3 border-[#111111] shadow-[6px_6px_0px_#111111] space-y-4">
+            <h3 className="text-base font-black font-display text-[#111111] dark:text-[#F5F2EB] flex items-center gap-2">
+              <Calendar className="w-5 h-5" />
+              <span>Propose Circle Plan</span>
             </h3>
 
             <div>
-              <label className="text-xs font-black text-stone-900 dark:text-stone-100 block mb-1">Plan Title</label>
+              <label className="text-xs font-black uppercase text-[#111111] dark:text-[#F5F2EB] block mb-1">
+                Plan Title
+              </label>
               <input
                 type="text"
                 value={newPlanTitle}
                 onChange={(e) => setNewPlanTitle(e.target.value)}
-                placeholder="e.g. Saturday Dinner, Coorg Trip, Badminton"
-                className="w-full text-xs p-3 neo-input text-stone-950 dark:text-stone-100 font-bold"
+                placeholder="e.g. Saturday Coffee or Weekend Hike"
+                className="neo-input text-xs"
               />
             </div>
 
             <div>
-              <label className="text-xs font-black text-stone-900 dark:text-stone-100 block mb-1">Date & Time</label>
+              <label className="text-xs font-black uppercase text-[#111111] dark:text-[#F5F2EB] block mb-1">
+                Date & Time
+              </label>
               <input
                 type="text"
                 value={newPlanTime}
                 onChange={(e) => setNewPlanTime(e.target.value)}
-                placeholder="e.g. This Saturday at 7:30 PM"
-                className="w-full text-xs p-3 neo-input text-stone-950 dark:text-stone-100 font-bold"
+                placeholder="e.g. Saturday at 4:00 PM"
+                className="neo-input text-xs"
               />
             </div>
 
             <div>
-              <label className="text-xs font-black text-stone-900 dark:text-stone-100 block mb-1">Location (Optional)</label>
+              <label className="text-xs font-black uppercase text-[#111111] dark:text-[#F5F2EB] block mb-1">
+                Location (Optional)
+              </label>
               <input
                 type="text"
                 value={newPlanLocation}
                 onChange={(e) => setNewPlanLocation(e.target.value)}
-                placeholder="e.g. Olive Beach / Discord"
-                className="w-full text-xs p-3 neo-input text-stone-950 dark:text-stone-100 font-bold"
+                placeholder="e.g. Park or Cafe"
+                className="neo-input text-xs"
               />
             </div>
 
-            <div className="flex justify-end gap-2.5 pt-3 border-t-2 border-stone-900 dark:border-stone-750">
+            <div className="flex justify-end gap-2.5 pt-3 border-t-2 border-black/10 dark:border-white/10">
               <button
                 type="button"
                 onClick={() => setShowCreatePlanModal(false)}
-                className="px-4 py-2 neo-btn text-xs font-black cursor-pointer"
+                className="neo-btn text-xs py-2 px-4"
               >
                 Cancel
               </button>
@@ -580,10 +647,10 @@ export const HomeFeed: React.FC<HomeFeedProps> = ({
                     setNewPlanTime('');
                     setNewPlanLocation('');
                   } catch (err: any) {
-                    alert(err.message || 'Failed to create plan');
+                    console.error('Failed to create plan:', err);
                   }
                 }}
-                className="px-5 py-2 neo-btn-primary disabled:opacity-40 text-xs font-black cursor-pointer"
+                className="neo-btn-primary text-xs py-2 px-5 disabled:opacity-40"
               >
                 Create Plan
               </button>
@@ -591,6 +658,7 @@ export const HomeFeed: React.FC<HomeFeedProps> = ({
           </div>
         </div>
       )}
+
     </div>
   );
 };

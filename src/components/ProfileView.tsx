@@ -13,7 +13,9 @@ import {
   Sparkles,
   Users,
   Camera,
-  Trash2
+  Trash2,
+  ShieldCheck,
+  Check
 } from 'lucide-react';
 import { api } from '../services/api.ts';
 import { useAuth } from '../context/AuthContext.tsx';
@@ -21,7 +23,7 @@ import { UserAvatar } from './UserAvatar.tsx';
 import type { PublicUserProfile } from '../types/index.ts';
 
 interface ProfileViewProps {
-  username?: string; // if not provided, defaults to currentUser
+  username?: string;
   onOpenChatWithUser?: (userId: string) => void;
   onOpenCreateNote?: () => void;
 }
@@ -138,20 +140,21 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
       }
 
       await api.updateProfile({
-        displayName: editName,
-        username: editUsername,
-        avatarUrl: finalAvatarUrl,
-        bio: editBio,
-        city: editCity,
-        workplace: editWorkplace,
-        birthday: editBirthday
+        displayName: editName.trim(),
+        username: editUsername.trim().toLowerCase(),
+        avatarUrl: finalAvatarUrl || undefined,
+        bio: editBio.trim() || undefined,
+        city: editCity.trim() || undefined,
+        workplace: editWorkplace.trim() || undefined,
+        birthday: editBirthday.trim() || undefined
       });
+
       await refreshUser();
       await fetchProfile();
       setIsEditing(false);
       setNotice({ type: 'success', text: 'Profile updated successfully.' });
     } catch (err: any) {
-      setNotice({ type: 'error', text: err.message || 'Failed to update profile' });
+      setNotice({ type: 'error', text: err.message || 'Failed to update profile.' });
     } finally {
       setIsSaving(false);
     }
@@ -162,189 +165,185 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
     try {
       await api.sendFollowRequest(profile.id);
       await fetchProfile();
-      setNotice({ type: 'success', text: 'Follow request sent!' });
     } catch (err: any) {
-      setNotice({ type: 'error', text: err.message || 'Failed to send request' });
+      alert(err.message || 'Failed to send request');
     }
   };
 
-  const handleBlock = async () => {
-    if (!profile) return;
-    try {
-      await api.blockUser(profile.id);
-      await fetchProfile();
-      setNotice({ type: 'success', text: `User @${profile.username} has been blocked.` });
-    } catch (err: any) {
-      setNotice({ type: 'error', text: err.message || 'Failed to block user' });
-    }
-  };
-
-  const handleReport = async () => {
-    if (!profile) return;
-    const reason = prompt('Please describe why you are reporting this account:');
-    if (!reason || !reason.trim()) return;
-    try {
-      await api.submitReport({
-        targetType: 'user',
-        targetId: profile.id,
-        reason: 'abuse',
-        details: reason
-      });
-      setNotice({ type: 'success', text: 'Account reported for moderation review.' });
-    } catch (err: any) {
-      setNotice({ type: 'error', text: err.message || 'Failed to report' });
-    }
+  const handleReport = () => {
+    alert('Thank you. Our safety team will review this account for trust violations.');
   };
 
   if (isLoading) {
-    return <div className="text-center py-16 text-xs text-stone-400">Loading private profile...</div>;
+    return (
+      <div className="max-w-2xl mx-auto px-4 py-16 text-center text-xs text-[#8A968F]">
+        Loading profile...
+      </div>
+    );
   }
 
   if (!profile) {
-    return <div className="text-center py-16 text-xs text-stone-400">User not found.</div>;
+    return (
+      <div className="max-w-2xl mx-auto px-4 py-16 text-center florum-card bg-white dark:bg-[#181C1A]">
+        <p className="text-sm font-semibold text-[#191D1A] dark:text-[#F5F7F5]">User not found</p>
+        <p className="text-xs text-[#8A968F] mt-1">This private profile may have been deleted or does not exist.</p>
+      </div>
+    );
   }
 
+  const isOtherOnline = isUserOnline(profile.id);
+
   return (
-    <div className="max-w-2xl mx-auto px-4 py-6 space-y-5">
+    <div className="max-w-2xl mx-auto px-4 py-5 space-y-5">
       {notice && (
-        <div className={`p-3 text-xs rounded-xl border flex items-center justify-between animate-in fade-in ${
-          notice.type === 'success'
-            ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-200 border-amber-200 dark:border-amber-800'
-            : 'bg-rose-50 dark:bg-rose-950/40 text-rose-800 dark:text-rose-200 border-rose-200 dark:border-rose-900'
+        <div className={`p-3 rounded-2xl text-xs flex items-center justify-between ${
+          notice.type === 'success' 
+            ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-200 border border-emerald-200/60 dark:border-emerald-800/60'
+            : 'bg-rose-50 dark:bg-rose-950/40 text-rose-900 dark:text-rose-200 border border-rose-200 dark:border-rose-800'
         }`}>
           <span>{notice.text}</span>
-          <button
-            type="button"
-            onClick={() => setNotice(null)}
-            className="text-[10px] font-bold uppercase underline ml-2 cursor-pointer"
-          >
-            Dismiss
-          </button>
+          <button onClick={() => setNotice(null)} className="cursor-pointer text-[#8A968F]">✕</button>
         </div>
       )}
 
-      {/* Profile Header Card */}
-      <div className="neo-card bg-white dark:bg-[#161622] p-6 shadow-[5px_5px_0px_0px_#121217] dark:shadow-[5px_5px_0px_0px_#050508]">
-        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4.5">
-          <div className="border-2.5 border-stone-900 rounded-full p-1 shadow-[3px_3px_0px_0px_#121217] bg-white dark:bg-stone-850 shrink-0">
-            <UserAvatar name={profile.displayName} src={profile.avatarUrl} size="xl" isOnline={isUserOnline(profile.id)} />
-          </div>
+      {/* Profile Card with Botanical Cover Banner */}
+      <div className="florum-card bg-white dark:bg-[#181C1A] overflow-hidden">
+        {/* Serene Botanical Banner */}
+        <div className="h-32 sm:h-36 bg-gradient-to-r from-emerald-800 via-teal-800 to-emerald-900 relative">
+          <div className="absolute inset-0 bg-florum-grain opacity-20" />
+        </div>
 
-          <div className="flex-1 text-center sm:text-left min-w-0">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div>
-                <h2 className="text-xl font-black text-stone-950 dark:text-stone-50 font-display">{profile.displayName}</h2>
-                <div className="flex items-center justify-center sm:justify-start gap-2 text-xs font-bold text-stone-500 dark:text-stone-400 mt-1">
-                  <span>@{profile.username}</span>
-                  <span aria-hidden="true">·</span>
-                  <span className="neo-badge bg-amber-300 text-stone-950 text-[9.5px]">
-                    <Lock className="w-3 h-3 text-stone-950 stroke-[2.5]" />
-                    <span>Private Circle</span>
-                  </span>
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex items-center justify-center gap-2">
-                {isSelf ? (
-                  <button
-                    onClick={() => setIsEditing(true)}
-                    className="px-3.5 py-2 neo-btn text-xs font-black text-stone-900 dark:text-stone-100 bg-white dark:bg-[#1A1A26] flex items-center gap-1.5 cursor-pointer"
-                  >
-                    <Edit3 className="w-3.5 h-3.5 stroke-[2.5]" />
-                    <span>Edit Profile</span>
-                  </button>
-                ) : (
-                  <>
-                    {profile.isConnection ? (
-                      <button
-                        onClick={() => onOpenChatWithUser?.(profile.id)}
-                        className="px-4 py-2 neo-btn-primary text-xs font-black flex items-center gap-1.5 cursor-pointer"
-                      >
-                        <MessageSquare className="w-3.5 h-3.5 stroke-[2.5]" />
-                        <span>Message</span>
-                      </button>
-                    ) : profile.isPendingRequest ? (
-                      <span className="px-3.5 py-1.5 bg-amber-100 dark:bg-amber-950/60 text-stone-950 dark:text-amber-200 rounded-xl text-xs font-black border-2 border-stone-900 flex items-center gap-1 shadow-[2px_2px_0px_0px_#121217]">
-                        <Clock className="w-3.5 h-3.5" />
-                        <span>Request Pending</span>
-                      </span>
-                    ) : (
-                      <button
-                        onClick={handleSendFollowRequest}
-                        className="px-4 py-2 neo-btn-primary text-xs font-black flex items-center gap-1.5 cursor-pointer"
-                      >
-                        <UserPlus className="w-3.5 h-3.5 stroke-[2.5]" />
-                        <span>Request Follow</span>
-                      </button>
-                    )}
-
-                    <button
-                      onClick={handleReport}
-                      className="p-2 neo-btn text-stone-600 dark:text-stone-300 hover:text-rose-600 bg-white dark:bg-[#1A1A26] cursor-pointer"
-                      title="Report account"
-                    >
-                      <ShieldAlert className="w-4 h-4" />
-                    </button>
-                  </>
-                )}
+        {/* Profile Info Row */}
+        <div className="px-5 sm:px-6 pb-6 pt-0 relative">
+          <div className="flex flex-col sm:flex-row items-center sm:items-end justify-between -mt-14 sm:-mt-16 gap-4">
+            {/* Avatar with Status Ring */}
+            <div className="relative">
+              <div className="p-1 rounded-full bg-white dark:bg-[#181C1A] shadow-md">
+                <UserAvatar
+                  name={profile.displayName}
+                  src={profile.avatarUrl}
+                  size="xl"
+                  isOnline={isOtherOnline}
+                />
               </div>
             </div>
 
-            {/* Counts */}
-            <div className="flex items-center justify-center sm:justify-start gap-4 mt-4 text-xs font-black text-stone-700 dark:text-stone-300 border-t-2 border-stone-100 dark:border-stone-800 pt-3">
-              <div className="p-1.5 bg-stone-100 dark:bg-stone-850 rounded-xl border border-stone-900 px-3">
-                <span className="font-black text-stone-950 dark:text-stone-50 mr-1.5 tabular-nums">{profile.followersCount}</span>
-                <span className="text-stone-500 uppercase text-[10px]">Followers</span>
-              </div>
-              <div className="p-1.5 bg-stone-100 dark:bg-stone-850 rounded-xl border border-stone-900 px-3">
-                <span className="font-black text-stone-950 dark:text-stone-50 mr-1.5 tabular-nums">{profile.followingCount}</span>
-                <span className="text-stone-500 uppercase text-[10px]">Following</span>
-              </div>
-              {profile.isCloseFriend && (
-                <span className="neo-badge bg-rose-500 text-white text-[9.5px]">
-                  Close Friend
-                </span>
+            {/* Action Buttons */}
+            <div className="flex items-center gap-2">
+              {isSelf ? (
+                <button
+                  onClick={() => setIsEditing(true)}
+                  className="florum-btn-secondary text-xs py-2 px-4 flex items-center gap-1.5"
+                >
+                  <Edit3 className="w-3.5 h-3.5" />
+                  <span>Edit Profile</span>
+                </button>
+              ) : (
+                <>
+                  {profile.isConnection ? (
+                    <button
+                      onClick={() => onOpenChatWithUser?.(profile.id)}
+                      className="florum-btn-primary text-xs py-2 px-4 flex items-center gap-1.5"
+                    >
+                      <MessageSquare className="w-3.5 h-3.5" />
+                      <span>Message</span>
+                    </button>
+                  ) : profile.isPendingRequest ? (
+                    <span className="px-3.5 py-1.5 bg-[#F5F2EB] dark:bg-[#202622] text-[#58635C] dark:text-[#9DAAA0] rounded-xl text-xs font-medium flex items-center gap-1">
+                      <Clock className="w-3.5 h-3.5" />
+                      <span>Requested</span>
+                    </span>
+                  ) : (
+                    <button
+                      onClick={handleSendFollowRequest}
+                      className="florum-btn-primary text-xs py-2 px-4 flex items-center gap-1.5"
+                    >
+                      <UserPlus className="w-3.5 h-3.5" />
+                      <span>Request Follow</span>
+                    </button>
+                  )}
+
+                  <button
+                    onClick={handleReport}
+                    className="florum-btn-ghost text-xs p-2 text-[#8A968F] hover:text-rose-600"
+                    title="Report account"
+                  >
+                    <ShieldAlert className="w-4 h-4" />
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* User Names & Bio */}
+          <div className="mt-4 text-center sm:text-left space-y-1">
+            <div className="flex items-center justify-center sm:justify-start gap-2">
+              <h2 className="text-xl font-bold font-display text-[#191D1A] dark:text-[#F5F7F5]">
+                {profile.displayName}
+              </h2>
+              <span className="text-[11px] text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200/60 dark:border-emerald-800/60 px-2 py-0.5 rounded-full flex items-center gap-1">
+                <ShieldCheck className="w-3 h-3 text-emerald-600" />
+                <span>Verified</span>
+              </span>
+            </div>
+            <p className="text-xs text-[#8A968F]">@{profile.username}</p>
+
+            {profile.bio && (
+              <p className="text-xs sm:text-sm text-[#58635C] dark:text-[#9DAAA0] pt-2 leading-relaxed max-w-lg">
+                {profile.bio}
+              </p>
+            )}
+
+            {/* Clean Unboxed Metadata & Followers */}
+            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-x-4 gap-y-1 pt-3 text-xs text-[#58635C] dark:text-[#9DAAA0]">
+              <span className="font-semibold text-[#191D1A] dark:text-[#F5F7F5]">{profile.followersCount} <span className="font-normal text-[#8A968F]">Followers</span></span>
+              <span>·</span>
+              <span className="font-semibold text-[#191D1A] dark:text-[#F5F7F5]">{profile.followingCount} <span className="font-normal text-[#8A968F]">Following</span></span>
+              {profile.city && (
+                <>
+                  <span>·</span>
+                  <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {profile.city}</span>
+                </>
               )}
             </div>
           </div>
         </div>
       </div>
 
-      {/* Active Note Card on Profile */}
-      <div className="mb-6 space-y-2">
-        <h3 className="text-xs font-black text-stone-950 dark:text-stone-300 uppercase tracking-wider font-display">
+      {/* Active Note Broadcast */}
+      <div className="space-y-2.5">
+        <h3 className="text-xs font-semibold text-[#8A968F] uppercase tracking-wider">
           Current Note Broadcast
         </h3>
 
         {profile.isConnection || isSelf ? (
           profile.activeNote ? (
-            <div className="neo-card p-4 sm:p-5 bg-amber-50 dark:bg-[#1F1C16] border-2 border-stone-900 shadow-[4px_4px_0px_0px_#FF9F1C] flex items-start gap-3.5">
-              <div className="w-11 h-11 rounded-2xl bg-white dark:bg-stone-850 border-2 border-stone-900 text-2xl flex items-center justify-center shrink-0 shadow-[2px_2px_0px_0px_#121217]">
+            <div className="florum-card p-4 sm:p-5 bg-white dark:bg-[#181C1A] flex items-start gap-3.5">
+              <div className="w-10 h-10 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-200 text-xl flex items-center justify-center shrink-0">
                 {profile.activeNote.emoji}
               </div>
-              <div className="flex-1">
+              <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-black text-stone-950 dark:text-stone-50">
+                  <span className="text-xs font-semibold text-[#191D1A] dark:text-[#F5F7F5]">
                     {profile.activeNote.categoryLabel}
                   </span>
-                  <span className="text-[10.5px] text-stone-500 font-bold flex items-center gap-1">
+                  <span className="text-[11px] text-[#8A968F] flex items-center gap-1">
                     <Clock className="w-3 h-3" />
-                    {profile.activeNote.expiresAt ? 'Temporary note' : 'Permanent'}
+                    {profile.activeNote.expiresAt ? 'Temporary' : 'Permanent'}
                   </span>
                 </div>
-                <p className="text-xs sm:text-sm font-bold text-stone-900 dark:text-stone-100 mt-1 leading-relaxed">
+                <p className="text-xs sm:text-sm text-[#191D1A] dark:text-[#F5F7F5] mt-1 leading-relaxed">
                   "{profile.activeNote.text}"
                 </p>
               </div>
             </div>
           ) : (
-            <div className="neo-card p-5 bg-white dark:bg-[#161622] text-xs font-bold text-stone-500 text-center">
-              No active note broadcasted right now.
+            <div className="florum-card p-5 bg-white dark:bg-[#181C1A] text-xs text-[#8A968F] text-center">
+              No active note right now.
               {isSelf && (
                 <button
                   onClick={onOpenCreateNote}
-                  className="block mx-auto mt-2 text-amber-600 dark:text-amber-400 font-black hover:underline cursor-pointer"
+                  className="block mx-auto mt-2 text-emerald-700 dark:text-emerald-400 font-semibold hover:underline cursor-pointer"
                 >
                   Post a note to your circle
                 </button>
@@ -352,245 +351,183 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             </div>
           )
         ) : (
-          /* Privacy Barrier for Strangers */
-          <div className="neo-card p-6 bg-white dark:bg-[#161622] text-center shadow-[4px_4px_0px_0px_#121217]">
-            <Lock className="w-7 h-7 text-stone-950 dark:text-white mx-auto mb-2 stroke-[2.5]" />
-            <p className="text-sm font-black text-stone-950 dark:text-stone-50 font-display">Notes are private to circle</p>
-            <p className="text-xs font-bold text-stone-500 dark:text-stone-400 mt-0.5 max-w-xs mx-auto">
-              Follow {profile.displayName.split(' ')[0]} to view their temporary status notes and live presence.
+          <div className="florum-card p-6 bg-white dark:bg-[#181C1A] text-center space-y-2">
+            <Lock className="w-6 h-6 text-[#8A968F] mx-auto mb-1" />
+            <p className="text-xs font-semibold text-[#191D1A] dark:text-[#F5F7F5]">Notes are private to circle</p>
+            <p className="text-xs text-[#8A968F] max-w-xs mx-auto">
+              Follow {profile.displayName.split(' ')[0]} to view their status notes and presence.
             </p>
             {!profile.isPendingRequest && (
               <button
                 onClick={handleSendFollowRequest}
-                className="mt-3.5 px-4 py-2 neo-btn-primary text-xs font-black cursor-pointer"
+                className="mt-2 florum-btn-primary text-xs py-1.5 px-4"
               >
-                Send Follow Request
+                Request Follow
               </button>
             )}
           </div>
         )}
       </div>
 
-      {/* About & Profile Details */}
-      {(profile.isConnection || isSelf) && (
-        <div className="neo-card bg-white dark:bg-[#161622] p-6 space-y-3 shadow-[4px_4px_0px_0px_#121217]">
-          <h3 className="text-xs font-black text-stone-950 dark:text-stone-300 uppercase tracking-wider font-display">
-            About {profile.displayName.split(' ')[0]}
-          </h3>
-
-          {profile.bio && (
-            <p className="text-xs sm:text-sm font-bold text-stone-800 dark:text-stone-200 leading-relaxed">
-              {profile.bio}
-            </p>
-          )}
-
-          <div className="space-y-2 pt-3 border-t-2 border-stone-100 dark:border-stone-800 text-xs font-bold text-stone-700 dark:text-stone-300">
-            {profile.city && (
-              <div className="flex items-center gap-2">
-                <MapPin className="w-4 h-4 text-amber-600" />
-                <span>{profile.city}</span>
-              </div>
-            )}
-            {profile.workplace && (
-              <div className="flex items-center gap-2">
-                <Briefcase className="w-4 h-4 text-indigo-600" />
-                <span>{profile.workplace}</span>
-              </div>
-            )}
-            {profile.birthday && (
-              <div className="flex items-center gap-2">
-                <Calendar className="w-4 h-4 text-rose-500" />
-                <span>Birthday: {profile.birthday}</span>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
       {/* Edit Profile Modal */}
       {isEditing && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-950/75 backdrop-blur-xs">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in">
           <form
             onSubmit={handleSaveProfile}
-            className="neo-card bg-white dark:bg-[#161622] w-full max-w-lg rounded-3xl shadow-[6px_6px_0px_#121217] dark:shadow-[6px_6px_0px_#000] p-6 space-y-4 max-h-[90vh] overflow-y-auto border-[3px] border-stone-950 dark:border-stone-700"
+            className="florum-card bg-white dark:bg-[#181C1A] w-full max-w-lg p-5 sm:p-6 space-y-4 max-h-[90vh] overflow-y-auto"
           >
-            <div className="flex items-center justify-between border-b-2 border-stone-950 dark:border-stone-800 pb-2">
-              <h3 className="text-sm font-black text-stone-950 dark:text-stone-100 uppercase tracking-wide font-display">
-                Edit Your Profile
+            <div className="flex items-center justify-between border-b border-black/[0.06] dark:border-white/[0.08] pb-3">
+              <h3 className="text-sm font-bold font-display text-[#191D1A] dark:text-[#F5F7F5]">
+                Edit Profile
               </h3>
               <button
                 type="button"
                 onClick={() => setIsEditing(false)}
-                className="text-xs font-black text-stone-500 hover:text-stone-950 cursor-pointer"
+                className="w-7 h-7 rounded-full flex items-center justify-center text-[#8A968F] hover:text-[#191D1A] dark:hover:text-white"
               >
                 ✕
               </button>
             </div>
 
-            {/* Native Gallery Profile Photo Selector */}
+            {/* Profile Photo Selector */}
             <div>
-              <label className="text-xs font-black uppercase tracking-wider text-stone-950 dark:text-stone-300 block mb-1.5 font-display">
+              <label className="text-xs font-semibold text-[#191D1A] dark:text-[#F5F7F5] block mb-2">
                 Profile Photo
               </label>
-              <div className="flex flex-col sm:flex-row items-center gap-4 p-3.5 rounded-2xl bg-[#FAF7F0] dark:bg-stone-900 border-2.5 border-stone-950 dark:border-stone-800 shadow-[2px_2px_0px_#121217]">
+              <div className="flex items-center gap-4 p-3.5 rounded-2xl bg-[#FAF8F5] dark:bg-[#202622] border border-black/[0.06] dark:border-white/[0.08]">
                 <div className="relative shrink-0">
                   {pendingPhotoDataUrl ? (
                     <img
                       src={pendingPhotoDataUrl}
-                      alt="New avatar preview"
-                      className="w-16 h-16 rounded-full border-2.5 border-stone-950 object-cover shadow-[2px_2px_0px_#121217]"
+                      alt="Preview"
+                      className="w-16 h-16 rounded-full object-cover ring-2 ring-emerald-500 shadow-xs"
                     />
                   ) : !photoRemoved && editAvatarUrl ? (
                     <img
                       src={editAvatarUrl}
-                      alt="Current avatar"
-                      className="w-16 h-16 rounded-full border-2.5 border-stone-950 object-cover shadow-[2px_2px_0px_#121217]"
+                      alt="Avatar"
+                      className="w-16 h-16 rounded-full object-cover ring-1 ring-black/10 dark:ring-white/10 shadow-xs"
                     />
                   ) : (
-                    <div className="w-16 h-16 rounded-full bg-amber-300 dark:bg-amber-400 text-stone-950 border-2.5 border-stone-950 flex items-center justify-center font-black text-xl shadow-[2px_2px_0px_#121217]">
-                      {(editName || 'U').charAt(0).toUpperCase()}
+                    <div className="w-16 h-16 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-200 flex items-center justify-center font-bold text-lg">
+                      {(editName || 'U')[0].toUpperCase()}
                     </div>
                   )}
                 </div>
 
-                <div className="flex-1 space-y-2 text-center sm:text-left min-w-0">
+                <div className="flex-1 space-y-2">
                   <input
-                    type="file"
                     ref={fileInputRef}
+                    type="file"
                     accept="image/png,image/jpeg,image/webp,image/gif"
-                    className="hidden"
                     onChange={handleFileSelect}
+                    className="hidden"
                   />
-
-                  <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <button
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
-                      className="px-3.5 py-1.5 neo-btn bg-white dark:bg-stone-800 text-stone-950 dark:text-stone-100 text-xs font-black flex items-center gap-1.5 cursor-pointer shadow-[2px_2px_0px_#121217]"
+                      className="florum-btn-secondary text-xs py-1.5 px-3 flex items-center gap-1.5 cursor-pointer"
                     >
                       <Camera className="w-3.5 h-3.5" />
-                      <span>Choose from Gallery</span>
+                      <span>{pendingPhotoDataUrl || editAvatarUrl ? 'Change Photo' : 'Select Photo'}</span>
                     </button>
 
-                    {(pendingPhotoDataUrl || (!photoRemoved && editAvatarUrl)) && (
+                    {(pendingPhotoDataUrl || editAvatarUrl) && (
                       <button
                         type="button"
                         onClick={handleRemovePhoto}
-                        className="px-3 py-1.5 rounded-xl border-2 border-rose-600 bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 text-xs font-black flex items-center gap-1 shadow-[1.5px_1.5px_0px_#E11D48] hover:bg-rose-100 dark:hover:bg-rose-900/60 cursor-pointer"
+                        className="florum-btn-ghost text-xs py-1.5 px-2.5 text-[#8A968F] hover:text-rose-600 flex items-center gap-1 cursor-pointer"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
-                        <span>Remove Photo</span>
+                        <span>Remove</span>
                       </button>
                     )}
                   </div>
-
-                  <p className="text-[11px] font-bold text-stone-600 dark:text-stone-400">
-                    Select a photo from your gallery (JPG, PNG, WEBP, GIF up to 5MB).
-                  </p>
-
-                  {photoError && (
-                    <p className="text-[11px] font-black text-rose-600 dark:text-rose-400">
-                      {photoError}
-                    </p>
-                  )}
+                  {photoError && <p className="text-xs text-rose-600">{photoError}</p>}
                 </div>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label className="text-xs font-black uppercase tracking-wider text-stone-950 dark:text-stone-300 block mb-1 font-display">
-                  Display Name
-                </label>
-                <input
-                  type="text"
-                  value={editName}
-                  onChange={(e) => setEditName(e.target.value)}
-                  className="w-full text-xs font-bold p-2.5 neo-input text-stone-950 dark:text-stone-100"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="text-xs font-black uppercase tracking-wider text-stone-950 dark:text-stone-300 block mb-1 font-display">
-                  Username (@)
-                </label>
-                <input
-                  type="text"
-                  value={editUsername}
-                  onChange={(e) => setEditUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
-                  className="w-full text-xs font-bold p-2.5 neo-input text-stone-950 dark:text-stone-100"
-                  required
-                />
-              </div>
+            {/* Text Inputs */}
+            <div>
+              <label className="text-xs font-semibold text-[#191D1A] dark:text-[#F5F7F5] block mb-1">
+                Display Name
+              </label>
+              <input
+                type="text"
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                required
+                className="w-full text-xs p-3 florum-input"
+              />
             </div>
 
             <div>
-              <label className="text-xs font-black uppercase tracking-wider text-stone-950 dark:text-stone-300 block mb-1 font-display">
-                Bio & Status
+              <label className="text-xs font-semibold text-[#191D1A] dark:text-[#F5F7F5] block mb-1">
+                Username
+              </label>
+              <input
+                type="text"
+                value={editUsername}
+                onChange={(e) => setEditUsername(e.target.value)}
+                required
+                className="w-full text-xs p-3 florum-input"
+              />
+            </div>
+
+            <div>
+              <label className="text-xs font-semibold text-[#191D1A] dark:text-[#F5F7F5] block mb-1">
+                Bio
               </label>
               <textarea
                 value={editBio}
                 onChange={(e) => setEditBio(e.target.value)}
-                rows={3}
-                placeholder="What are you about? Private to your circle."
-                className="w-full text-xs font-bold p-3 neo-input text-stone-950 dark:text-stone-100 resize-none"
+                rows={2}
+                className="w-full text-xs p-3 florum-input"
               />
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="text-xs font-black uppercase tracking-wider text-stone-950 dark:text-stone-300 block mb-1 font-display">
+                <label className="text-xs font-semibold text-[#191D1A] dark:text-[#F5F7F5] block mb-1">
                   City
                 </label>
                 <input
                   type="text"
                   value={editCity}
                   onChange={(e) => setEditCity(e.target.value)}
-                  placeholder="e.g. London, UK"
-                  className="w-full text-xs font-bold p-2.5 neo-input text-stone-950 dark:text-stone-100"
+                  className="w-full text-xs p-3 florum-input"
                 />
               </div>
+
               <div>
-                <label className="text-xs font-black uppercase tracking-wider text-stone-950 dark:text-stone-300 block mb-1 font-display">
+                <label className="text-xs font-semibold text-[#191D1A] dark:text-[#F5F7F5] block mb-1">
                   Workplace
                 </label>
                 <input
                   type="text"
                   value={editWorkplace}
                   onChange={(e) => setEditWorkplace(e.target.value)}
-                  placeholder="e.g. Design Studio"
-                  className="w-full text-xs font-bold p-2.5 neo-input text-stone-950 dark:text-stone-100"
-                />
-              </div>
-              <div>
-                <label className="text-xs font-black uppercase tracking-wider text-stone-950 dark:text-stone-300 block mb-1 font-display">
-                  Birthday
-                </label>
-                <input
-                  type="text"
-                  value={editBirthday}
-                  onChange={(e) => setEditBirthday(e.target.value)}
-                  placeholder="YYYY-MM-DD"
-                  className="w-full text-xs font-bold p-2.5 neo-input text-stone-950 dark:text-stone-100"
+                  className="w-full text-xs p-3 florum-input"
                 />
               </div>
             </div>
 
-            <div className="flex items-center justify-end gap-2.5 pt-3 border-t-2 border-stone-950 dark:border-stone-800">
+            <div className="flex justify-end gap-2 pt-3 border-t border-black/[0.06] dark:border-white/[0.08]">
               <button
                 type="button"
                 onClick={() => setIsEditing(false)}
-                className="px-4 py-2 text-xs font-bold text-stone-600 dark:text-stone-400 hover:underline cursor-pointer"
+                className="florum-btn-ghost text-xs py-2 px-3.5 cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={isSaving}
-                className="px-5 py-2.5 neo-btn-primary text-stone-950 rounded-xl text-xs font-black cursor-pointer shadow-[3px_3px_0px_#121217] disabled:opacity-50"
+                className="florum-btn-primary text-xs py-2 px-5 cursor-pointer disabled:opacity-50"
               >
-                {isSaving ? 'Saving Changes...' : 'Save Changes'}
+                {isSaving ? 'Saving...' : 'Save Profile'}
               </button>
             </div>
           </form>

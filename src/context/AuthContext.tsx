@@ -3,12 +3,16 @@ import { api, setStoredToken, getStoredToken } from '../services/api.ts';
 import { localDb } from '../services/localDb.ts';
 import type { User, UserAvailability } from '../types/index.ts';
 
+export type ThemePreset = 'classic-cream' | 'dark-ink' | 'electric-yellow' | 'soft-mint';
+
 interface AuthContextType {
   currentUser: User | null;
   isLoading: boolean;
   isOnline: boolean;
   isDarkMode: boolean;
   toggleDarkMode: () => void;
+  themePreset: ThemePreset;
+  setThemePreset: (preset: ThemePreset) => void;
   login: (identifier: string, pass: string) => Promise<void>;
   register: (data: any) => Promise<void>;
   completeRegistration: (data: any) => Promise<any>;
@@ -33,21 +37,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [unreadNotifsCount, setUnreadNotifsCount] = useState(0);
   const [androidPreview, setAndroidPreview] = useState(false);
   const [onlineUserIds, setOnlineUserIds] = useState<Set<string>>(new Set());
-  const [isDarkMode, setIsDarkMode] = useState(() => {
-    return localStorage.getItem('notecircle_theme') === 'dark';
+  const [themePreset, setThemePresetState] = useState<ThemePreset>(() => {
+    const saved = localStorage.getItem('notecircle_theme_preset') as ThemePreset;
+    if (saved && ['classic-cream', 'dark-ink', 'electric-yellow', 'soft-mint'].includes(saved)) {
+      return saved;
+    }
+    return localStorage.getItem('notecircle_theme') === 'dark' ? 'dark-ink' : 'classic-cream';
   });
 
+  const isDarkMode = themePreset === 'dark-ink';
+
   useEffect(() => {
-    if (isDarkMode) {
+    document.documentElement.setAttribute('data-theme', themePreset);
+    if (themePreset === 'dark-ink') {
       document.documentElement.classList.add('dark');
-      localStorage.setItem('notecircle_theme', 'dark');
     } else {
       document.documentElement.classList.remove('dark');
-      localStorage.setItem('notecircle_theme', 'light');
     }
-  }, [isDarkMode]);
+    localStorage.setItem('notecircle_theme_preset', themePreset);
+    localStorage.setItem('notecircle_theme', themePreset === 'dark-ink' ? 'dark' : 'light');
+  }, [themePreset]);
 
-  const toggleDarkMode = () => setIsDarkMode((prev) => !prev);
+  const setThemePreset = (preset: ThemePreset) => {
+    setThemePresetState(preset);
+  };
+
+  const toggleDarkMode = () => {
+    setThemePresetState((prev) => (prev === 'dark-ink' ? 'classic-cream' : 'dark-ink'));
+  };
 
   // Monitor network connectivity for local-first reliability
   useEffect(() => {
@@ -248,6 +265,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isOnline,
         isDarkMode,
         toggleDarkMode,
+        themePreset,
+        setThemePreset,
         login,
         register,
         completeRegistration,

@@ -17,7 +17,8 @@ import {
   HelpCircle,
   Trash2,
   UserX,
-  User
+  User,
+  Camera
 } from 'lucide-react';
 import { api } from '../services/api.ts';
 import { localDb } from '../services/localDb.ts';
@@ -38,7 +39,7 @@ interface SettingsViewProps {
 }
 
 export const SettingsView: React.FC<SettingsViewProps> = ({ onOpenSupport, onOpenBugReport }) => {
-  const { currentUser, refreshUser, logout, isDarkMode, toggleDarkMode } = useAuth();
+  const { currentUser, refreshUser, logout, isDarkMode, toggleDarkMode, themePreset, setThemePreset } = useAuth();
 
   const [activeSection, setActiveSection] = useState<
     'account' | 'appearance' | 'privacy' | 'security' | 'notifications' | 'safety' | 'data' | 'android'
@@ -50,6 +51,63 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onOpenSupport, onOpe
   const [newEmail, setNewEmail] = useState(currentUser?.email || '');
   const [newPhone, setNewPhone] = useState(currentUser?.phone || '');
   const [accSuccess, setAccSuccess] = useState(false);
+
+  // Profile photo states in Settings
+  const avatarFileInputRef = React.useRef<HTMLInputElement | null>(null);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const [avatarError, setAvatarError] = useState<string | null>(null);
+
+  const handleSettingsAvatarSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setAvatarError(null);
+
+    const allowedMime = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
+    if (!allowedMime.includes(file.type.toLowerCase())) {
+      setAvatarError('Please select a valid image file (JPG, PNG, WEBP, or GIF).');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setAvatarError('Photo exceeds the 5MB size limit. Please choose a smaller image.');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = async () => {
+      const dataUrl = reader.result as string;
+      setIsUploadingAvatar(true);
+      try {
+        await api.uploadAvatar(dataUrl);
+        await refreshUser();
+        setInlineNotice({ type: 'success', text: 'Profile picture updated successfully.' });
+      } catch (err: any) {
+        setAvatarError(err.message || 'Failed to upload photo.');
+      } finally {
+        setIsUploadingAvatar(false);
+        if (avatarFileInputRef.current) avatarFileInputRef.current.value = '';
+      }
+    };
+    reader.onerror = () => {
+      setAvatarError('Could not read the selected image file. Please retry.');
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleSettingsAvatarRemove = async () => {
+    setIsUploadingAvatar(true);
+    setAvatarError(null);
+    try {
+      await api.removeAvatar();
+      await refreshUser();
+      setInlineNotice({ type: 'success', text: 'Profile picture removed.' });
+    } catch (err: any) {
+      setAvatarError(err.message || 'Failed to remove photo.');
+    } finally {
+      setIsUploadingAvatar(false);
+      if (avatarFileInputRef.current) avatarFileInputRef.current.value = '';
+    }
+  };
 
   // Privacy form
   const [privacySettings, setPrivacySettings] = useState<UserPrivacySettings>(
@@ -340,8 +398,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onOpenSupport, onOpe
   return (
     <div className="max-w-3xl mx-auto px-4 py-6 space-y-5">
       
-      {/* Settings Segmented Navigation Tabs */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-2 p-1.5 bg-[#FAF7F0] dark:bg-[#12121A] border-[3px] border-stone-950 dark:border-stone-750 rounded-2xl shadow-[3px_3px_0px_#121217] dark:shadow-[3px_3px_0px_#000] text-xs font-black scrollbar-none">
+      {/* Settings Navigation Tabs */}
+      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 p-1 bg-[#F5F2EB] dark:bg-[#181C1A] border border-black/[0.05] dark:border-white/[0.06] rounded-2xl text-xs font-medium scrollbar-none">
         {[
           { id: 'account', label: 'Account', icon: User },
           { id: 'appearance', label: 'Appearance', icon: Palette },
@@ -357,13 +415,13 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onOpenSupport, onOpe
             <button
               key={tab.id}
               onClick={() => setActiveSection(tab.id as any)}
-              className={`h-10 px-4 rounded-xl uppercase tracking-wider font-display font-black text-xs transition-all whitespace-nowrap shrink-0 flex items-center gap-2 cursor-pointer ${
+              className={`h-9 px-3.5 rounded-xl font-semibold text-xs transition-all whitespace-nowrap shrink-0 flex items-center gap-1.5 cursor-pointer ${
                 isActive
-                  ? 'bg-amber-400 text-stone-950 border-[2.5px] border-stone-950 shadow-[2px_2px_0px_#121217]'
-                  : 'bg-white dark:bg-[#1A1A26] text-stone-700 dark:text-stone-300 border-[2.5px] border-stone-950/20 dark:border-stone-750 hover:border-stone-950 dark:hover:border-stone-500 hover:text-stone-950 dark:hover:text-white'
+                  ? 'bg-white dark:bg-[#242A27] text-[#191D1A] dark:text-white shadow-xs font-bold'
+                  : 'text-[#58635C] dark:text-[#9DAAA0] hover:text-[#191D1A] dark:hover:text-white'
               }`}
             >
-              <IconComp className="w-3.5 h-3.5 stroke-[2.5]" />
+              <IconComp className="w-3.5 h-3.5" />
               <span>{tab.label}</span>
             </button>
           );
@@ -371,16 +429,16 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onOpenSupport, onOpe
       </div>
 
       {inlineNotice && (
-        <div className={`p-3.5 text-xs font-bold rounded-2xl border-[2.5px] border-stone-950 flex items-center justify-between shadow-[2px_2px_0px_#121217] ${
+        <div className={`p-3.5 text-xs font-medium rounded-2xl flex items-center justify-between ${
           inlineNotice.type === 'success' 
-            ? 'bg-amber-200 dark:bg-amber-950/60 text-stone-950 dark:text-amber-200' 
-            : 'bg-rose-200 dark:bg-rose-950/60 text-stone-950 dark:text-rose-200'
+            ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-200 border border-emerald-200/60 dark:border-emerald-800/60' 
+            : 'bg-rose-50 dark:bg-rose-950/40 text-rose-900 dark:text-rose-200 border border-rose-200 dark:border-rose-800'
         }`}>
           <span>{inlineNotice.text}</span>
           <button 
             type="button" 
             onClick={() => setInlineNotice(null)} 
-            className="text-[10px] font-black uppercase underline ml-2 cursor-pointer"
+            className="text-[11px] font-semibold underline ml-2 cursor-pointer text-[#8A968F]"
           >
             Dismiss
           </button>
@@ -390,131 +448,119 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onOpenSupport, onOpe
       {/* Section 0: Appearance / Theme */}
       {activeSection === 'appearance' && (
         <div className="space-y-4">
-          <div className="neo-card rounded-3xl p-5 sm:p-6 shadow-[5px_5px_0px_#121217] dark:shadow-[5px_5px_0px_#000] space-y-5 bg-white dark:bg-[#161622] border-[3px] border-stone-950 dark:border-stone-700">
-            <div className="border-b-[2.5px] border-stone-950 dark:border-stone-800 pb-3">
-              <h3 className="text-sm font-black text-stone-950 dark:text-stone-50 uppercase tracking-wide flex items-center gap-2 font-display">
-                <Palette className="w-4 h-4 stroke-[2.5] text-amber-500" />
-                <span>NoteCircle Visual Theme</span>
+          <div className="neo-card rounded-3xl p-5 sm:p-6 space-y-5 bg-[var(--card-surface)] border-2.5 border-[#111111] dark:border-[#3E3E4A] shadow-[5px_5px_0px_#111111]">
+            <div className="border-b-2 border-black/10 dark:border-white/10 pb-3">
+              <h3 className="text-sm font-black text-[#111111] dark:text-[#F5F2EB] flex items-center gap-2 font-display uppercase tracking-wide">
+                <Palette className="w-4 h-4 text-[#FFCA05]" />
+                <span>Theme Presets</span>
               </h3>
-              <p className="text-xs font-bold text-stone-600 dark:text-stone-400 mt-0.5">
-                Switch between high-contrast daylight cream canvas and deep obsidian neo-night.
+              <p className="text-xs font-semibold text-[#6B6863] dark:text-[#C8C5BE] mt-0.5">
+                Choose from four distinct tactile Neo-Brutalist presets.
               </p>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
-              {/* Theme Card A: Warm Cream Canvas */}
+              {/* Preset 1: Classic Cream */}
               <button
                 type="button"
-                onClick={() => isDarkMode && toggleDarkMode()}
-                className={`p-5 rounded-3xl border-[3px] text-left transition-all cursor-pointer relative group flex flex-col justify-between ${
-                  !isDarkMode 
-                    ? 'border-stone-950 bg-[#FAF7F0] shadow-[5px_5px_0px_#121217] ring-2 ring-amber-400' 
-                    : 'border-stone-950/30 dark:border-stone-750 bg-stone-50 dark:bg-[#15141E] opacity-75 hover:opacity-100 hover:border-stone-950 shadow-[3px_3px_0px_#121217] dark:shadow-[3px_3px_0px_#000]'
+                onClick={() => setThemePreset('classic-cream')}
+                className={`p-4 rounded-2xl border-2 text-left transition-all cursor-pointer relative flex flex-col justify-between ${
+                  themePreset === 'classic-cream' 
+                    ? 'border-[#111111] bg-[#FAF7F0] text-[#111111] shadow-[3px_3px_0px_#111111] ring-2 ring-[#FFCA05]' 
+                    : 'border-[#111111]/30 dark:border-[#3E3E4A] bg-[#FAF7F0] text-[#111111] opacity-80 hover:opacity-100'
                 }`}
               >
                 <div>
-                  {/* Card Header & Selected Indicator */}
-                  <div className="flex items-center justify-between mb-3.5">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-10 h-10 rounded-xl bg-amber-300 text-stone-950 border-2 border-stone-950 flex items-center justify-center shadow-[2px_2px_0px_#121217]">
-                        <Sun className="w-5 h-5 stroke-[2.5]" />
-                      </div>
-                      <div>
-                        <span className="text-sm font-black text-stone-950 block font-display">Warm Cream Canvas</span>
-                        <span className="text-[10px] font-black uppercase tracking-wider text-amber-700">Daylight Mode</span>
-                      </div>
-                    </div>
-                    {!isDarkMode ? (
-                      <span className="text-xs bg-amber-400 text-stone-950 font-black px-3 py-1 rounded-xl border-2 border-stone-950 flex items-center gap-1 shadow-[2px_2px_0px_#121217]">
-                        <Check className="w-3.5 h-3.5 stroke-[3.5]" /> Active
-                      </span>
-                    ) : (
-                      <span className="text-[11px] bg-stone-200 dark:bg-stone-800 text-stone-700 dark:text-stone-300 font-bold px-2.5 py-1 rounded-xl border border-stone-400 dark:border-stone-700 group-hover:border-stone-950">
-                        Select
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-black uppercase tracking-wider">Classic Cream</span>
+                    {themePreset === 'classic-cream' && (
+                      <span className="text-[10px] bg-[#FFCA05] text-[#111111] font-black px-2 py-0.5 rounded-lg border border-[#111111] shadow-[1px_1px_0px_#111111] flex items-center gap-1">
+                        <Check className="w-3 h-3 stroke-[3]" /> Active
                       </span>
                     )}
                   </div>
-
-                  {/* UI Preview Area */}
-                  <div className="p-3 bg-[#FAF7F0] rounded-2xl border-2 border-stone-950 space-y-2 shadow-[2.5px_2.5px_0px_#121217]">
-                    <div className="flex items-center justify-between">
-                      <div className="px-2 py-0.5 bg-amber-400 text-stone-950 font-black text-[9px] rounded-md border border-stone-950">
-                        NOTE #1
-                      </div>
-                      <span className="text-[10px] font-black text-stone-700">15m ago</span>
-                    </div>
-                    <p className="text-xs font-black text-stone-950 font-display">
-                      Cafe sync at 4 PM ☕
-                    </p>
-                    <div className="flex items-center gap-2 pt-1 border-t border-stone-950/20 text-[10px] font-bold text-stone-700">
-                      <span>🔥 4 reactions</span>
-                      <span>·</span>
-                      <span>Mutual circle</span>
-                    </div>
+                  <div className="p-2.5 bg-white rounded-xl border-1.5 border-[#111111] space-y-1 shadow-[1.5px_1.5px_0px_#111111]">
+                    <span className="text-[10px] font-black bg-[#FFCA05] text-[#111111] px-1.5 py-0.5 rounded-md border border-[#111111]">Cream Paper</span>
+                    <p className="text-xs font-bold text-[#111111]">Warm #FAF7F0 notebook</p>
                   </div>
-
-                  {/* Short Description (Strict Light Contrast) */}
-                  <p className="text-xs font-bold text-stone-800 dark:text-stone-300 mt-3 leading-relaxed">
-                    Tactile cream canvas (#FAF7F0) with deep ink-black neo-borders, amber accents, and crisp daylight contrast.
-                  </p>
                 </div>
               </button>
 
-              {/* Theme Card B: Obsidian Night */}
+              {/* Preset 2: Dark Ink Notebook */}
               <button
                 type="button"
-                onClick={() => !isDarkMode && toggleDarkMode()}
-                className={`p-5 rounded-3xl border-[3px] text-left transition-all cursor-pointer relative group flex flex-col justify-between ${
-                  isDarkMode 
-                    ? 'border-amber-400 dark:border-amber-400 bg-[#161622] shadow-[5px_5px_0px_#FFB800] ring-2 ring-amber-400' 
-                    : 'border-stone-950/30 dark:border-stone-750 bg-stone-50 dark:bg-[#15141E] opacity-75 hover:opacity-100 hover:border-stone-950 shadow-[3px_3px_0px_#121217] dark:shadow-[3px_3px_0px_#000]'
+                onClick={() => setThemePreset('dark-ink')}
+                className={`p-4 rounded-2xl border-2 text-left transition-all cursor-pointer relative flex flex-col justify-between ${
+                  themePreset === 'dark-ink' 
+                    ? 'border-[#3E3E4A] bg-[#111111] text-[#F5F2EB] shadow-[3px_3px_0px_#000000] ring-2 ring-[#FFCA05]' 
+                    : 'border-[#111111]/30 dark:border-[#3E3E4A] bg-[#111111] text-[#F5F2EB] opacity-80 hover:opacity-100'
                 }`}
               >
                 <div>
-                  {/* Card Header & Selected Indicator */}
-                  <div className="flex items-center justify-between mb-3.5">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-10 h-10 rounded-xl bg-stone-900 text-amber-400 border-2 border-stone-950 dark:border-stone-700 flex items-center justify-center shadow-[2px_2px_0px_#121217]">
-                        <Moon className="w-5 h-5 stroke-[2.5]" />
-                      </div>
-                      <div>
-                        <span className="text-sm font-black text-stone-950 dark:text-stone-50 block font-display">Obsidian Night</span>
-                        <span className="text-[10px] font-black uppercase tracking-wider text-amber-500">Dark Mode</span>
-                      </div>
-                    </div>
-                    {isDarkMode ? (
-                      <span className="text-xs bg-amber-400 text-stone-950 font-black px-3 py-1 rounded-xl border-2 border-stone-950 flex items-center gap-1 shadow-[2px_2px_0px_#121217]">
-                        <Check className="w-3.5 h-3.5 stroke-[3.5]" /> Active
-                      </span>
-                    ) : (
-                      <span className="text-[11px] bg-stone-200 dark:bg-stone-800 text-stone-700 dark:text-stone-300 font-bold px-2.5 py-1 rounded-xl border border-stone-400 dark:border-stone-700 group-hover:border-stone-950">
-                        Select
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-black uppercase tracking-wider">Dark Ink Notebook</span>
+                    {themePreset === 'dark-ink' && (
+                      <span className="text-[10px] bg-[#FFCA05] text-[#111111] font-black px-2 py-0.5 rounded-lg border border-[#111111] shadow-[1px_1px_0px_#111111] flex items-center gap-1">
+                        <Check className="w-3 h-3 stroke-[3]" /> Active
                       </span>
                     )}
                   </div>
-
-                  {/* UI Preview Area */}
-                  <div className="p-3 bg-[#0E0E14] rounded-2xl border-2 border-stone-750 space-y-2 shadow-[2.5px_2.5px_0px_#000]">
-                    <div className="flex items-center justify-between">
-                      <div className="px-2 py-0.5 bg-amber-400 text-stone-950 font-black text-[9px] rounded-md border border-stone-950">
-                        NOTE #1
-                      </div>
-                      <span className="text-[10px] font-bold text-stone-400">2h ago</span>
-                    </div>
-                    <p className="text-xs font-black text-stone-50 font-display">
-                      Encrypted draft #2 ⚡
-                    </p>
-                    <div className="flex items-center gap-2 pt-1 border-t border-stone-800 text-[10px] font-bold text-stone-400">
-                      <span>⚡ 7 reactions</span>
-                      <span>·</span>
-                      <span>Private circle</span>
-                    </div>
+                  <div className="p-2.5 bg-[#1E1E24] rounded-xl border-1.5 border-[#3E3E4A] space-y-1 shadow-[1.5px_1.5px_0px_#000000]">
+                    <span className="text-[10px] font-black bg-[#FFCA05] text-[#111111] px-1.5 py-0.5 rounded-md border border-[#111111]">Dark Slate</span>
+                    <p className="text-xs font-bold text-[#F5F2EB]">Deep #111111 ink contrast</p>
                   </div>
+                </div>
+              </button>
 
-                  {/* Short Description */}
-                  <p className="text-xs font-bold text-stone-600 dark:text-stone-300 mt-3 leading-relaxed">
-                    Deep obsidian surface (#0D0D12) with kinetic amber shadows, dark paper cards, and glowing badges.
-                  </p>
+              {/* Preset 3: Electric Yellow */}
+              <button
+                type="button"
+                onClick={() => setThemePreset('electric-yellow')}
+                className={`p-4 rounded-2xl border-2 text-left transition-all cursor-pointer relative flex flex-col justify-between ${
+                  themePreset === 'electric-yellow' 
+                    ? 'border-[#111111] bg-[#FFCA05] text-[#111111] shadow-[3px_3px_0px_#111111] ring-2 ring-[#111111]' 
+                    : 'border-[#111111]/30 dark:border-[#3E3E4A] bg-[#FFCA05] text-[#111111] opacity-80 hover:opacity-100'
+                }`}
+              >
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-black uppercase tracking-wider">Electric Yellow</span>
+                    {themePreset === 'electric-yellow' && (
+                      <span className="text-[10px] bg-[#111111] text-[#FFCA05] font-black px-2 py-0.5 rounded-lg border border-[#111111] shadow-[1px_1px_0px_#111111] flex items-center gap-1">
+                        <Check className="w-3 h-3 stroke-[3]" /> Active
+                      </span>
+                    )}
+                  </div>
+                  <div className="p-2.5 bg-[#FAF7F0] rounded-xl border-1.5 border-[#111111] space-y-1 shadow-[1.5px_1.5px_0px_#111111]">
+                    <span className="text-[10px] font-black bg-[#111111] text-[#FFCA05] px-1.5 py-0.5 rounded-md border border-[#111111]">High Energy</span>
+                    <p className="text-xs font-bold text-[#111111]">Vibrant #FFCA05 canvas</p>
+                  </div>
+                </div>
+              </button>
+
+              {/* Preset 4: Soft Mint */}
+              <button
+                type="button"
+                onClick={() => setThemePreset('soft-mint')}
+                className={`p-4 rounded-2xl border-2 text-left transition-all cursor-pointer relative flex flex-col justify-between ${
+                  themePreset === 'soft-mint' 
+                    ? 'border-[#111111] bg-[#D8F3DC] text-[#111111] shadow-[3px_3px_0px_#111111] ring-2 ring-[#2D7A58]' 
+                    : 'border-[#111111]/30 dark:border-[#3E3E4A] bg-[#D8F3DC] text-[#111111] opacity-80 hover:opacity-100'
+                }`}
+              >
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-black uppercase tracking-wider">Soft Mint</span>
+                    {themePreset === 'soft-mint' && (
+                      <span className="text-[10px] bg-[#FFCA05] text-[#111111] font-black px-2 py-0.5 rounded-lg border border-[#111111] shadow-[1px_1px_0px_#111111] flex items-center gap-1">
+                        <Check className="w-3 h-3 stroke-[3]" /> Active
+                      </span>
+                    )}
+                  </div>
+                  <div className="p-2.5 bg-[#FAF7F0] rounded-xl border-1.5 border-[#111111] space-y-1 shadow-[1.5px_1.5px_0px_#111111]">
+                    <span className="text-[10px] font-black bg-[#B7E4C7] text-[#111111] px-1.5 py-0.5 rounded-md border border-[#111111]">Calm Paper</span>
+                    <p className="text-xs font-bold text-[#111111]">Fresh #D8F3DC botanical</p>
+                  </div>
                 </div>
               </button>
             </div>
@@ -527,6 +573,71 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ onOpenSupport, onOpe
         <form onSubmit={handleSaveAccount} className="space-y-4">
           <div className="neo-card rounded-3xl p-5 sm:p-6 shadow-[5px_5px_0px_#121217] space-y-4 bg-white dark:bg-[#161622]">
             <h3 className="text-sm font-black text-stone-900 dark:text-stone-100 uppercase tracking-wide border-b-2 border-stone-900 dark:border-stone-800 pb-2">
+              Profile Photo & Identity
+            </h3>
+
+            {/* Profile Photo Management */}
+            <div className="flex flex-col sm:flex-row items-center gap-4 p-3.5 rounded-2xl bg-[#FAF7F0] dark:bg-stone-900 border-2.5 border-stone-950 dark:border-stone-800 shadow-[2px_2px_0px_#121217]">
+              <div className="relative shrink-0">
+                {currentUser?.avatarUrl ? (
+                  <img
+                    src={currentUser.avatarUrl}
+                    alt={currentUser.displayName}
+                    className="w-16 h-16 rounded-full border-2.5 border-stone-950 object-cover shadow-[2px_2px_0px_#121217]"
+                  />
+                ) : (
+                  <div className="w-16 h-16 rounded-full bg-amber-300 dark:bg-amber-400 text-stone-950 border-2.5 border-stone-950 flex items-center justify-center font-black text-xl shadow-[2px_2px_0px_#121217]">
+                    {(currentUser?.displayName || 'U').charAt(0).toUpperCase()}
+                  </div>
+                )}
+              </div>
+
+              <div className="flex-1 space-y-2 text-center sm:text-left min-w-0">
+                <input
+                  type="file"
+                  ref={avatarFileInputRef}
+                  accept="image/png,image/jpeg,image/webp,image/gif"
+                  className="hidden"
+                  onChange={handleSettingsAvatarSelect}
+                />
+
+                <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
+                  <button
+                    type="button"
+                    disabled={isUploadingAvatar}
+                    onClick={() => avatarFileInputRef.current?.click()}
+                    className="px-3.5 py-1.5 neo-btn bg-white dark:bg-stone-800 text-stone-950 dark:text-stone-100 text-xs font-black flex items-center gap-1.5 cursor-pointer shadow-[2px_2px_0px_#121217] disabled:opacity-50"
+                  >
+                    <Camera className="w-3.5 h-3.5" />
+                    <span>{isUploadingAvatar ? 'Updating...' : currentUser?.avatarUrl ? 'Change Profile Photo' : 'Add Profile Photo'}</span>
+                  </button>
+
+                  {currentUser?.avatarUrl && (
+                    <button
+                      type="button"
+                      disabled={isUploadingAvatar}
+                      onClick={handleSettingsAvatarRemove}
+                      className="px-3 py-1.5 rounded-xl border-2 border-rose-600 bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 text-xs font-black flex items-center gap-1 shadow-[1.5px_1.5px_0px_#E11D48] hover:bg-rose-100 dark:hover:bg-rose-900/60 cursor-pointer disabled:opacity-50"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>Remove Photo</span>
+                    </button>
+                  )}
+                </div>
+
+                <p className="text-[11px] font-bold text-stone-600 dark:text-stone-400">
+                  Select a picture from your device gallery (JPG, PNG, WEBP, or GIF up to 5MB).
+                </p>
+
+                {avatarError && (
+                  <p className="text-[11px] font-black text-rose-600 dark:text-rose-400">
+                    {avatarError}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <h3 className="text-sm font-black text-stone-900 dark:text-stone-100 uppercase tracking-wide border-b-2 border-stone-900 dark:border-stone-800 pb-2 pt-2">
               Account Credentials
             </h3>
 

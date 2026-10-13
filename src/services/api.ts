@@ -77,29 +77,30 @@ export const api = {
       body: JSON.stringify({ email, otp })
     });
   },
-  async completeRegistration(data: {
+  async register(data: {
     email: string;
-    verificationToken: string;
     username: string;
     displayName: string;
     password: string;
-    city?: string;
+    captchaToken?: string;
+    avatarDataUrl?: string;
     bio?: string;
-    avatarUrl?: string;
+    city?: string;
   }) {
-    return request<{ token: string; user: User }>('/api/auth/register/complete', {
+    return request<{ token: string; user: User }>('/api/auth/register', {
       method: 'POST',
       body: JSON.stringify(data)
     });
   },
-  async register(data: {
+  async completeRegistration(data: {
+    email: string;
     username: string;
     displayName: string;
-    email?: string;
-    phone?: string;
     password: string;
-    city?: string;
+    captchaToken?: string;
+    avatarDataUrl?: string;
     bio?: string;
+    city?: string;
   }) {
     return request<{ token: string; user: User }>('/api/auth/register', {
       method: 'POST',

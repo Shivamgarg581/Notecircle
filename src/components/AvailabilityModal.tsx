@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Clock, Moon, Shield, Check } from 'lucide-react';
+import { X, Clock, Moon, Shield, Check, Sparkles } from 'lucide-react';
 import { api } from '../services/api.ts';
 import { useAuth } from '../context/AuthContext.tsx';
 import type { AvailabilityCode, UserAvailability } from '../types/index.ts';
@@ -14,13 +14,13 @@ interface AvailabilityModalProps {
 const AVAILABILITY_OPTIONS: { code: AvailabilityCode; label: string; emoji: string; desc: string }[] = [
   { code: 'available', label: 'Available', emoji: '🟢', desc: 'Free to talk and reply to notes' },
   { code: 'dnd', label: 'Do Not Disturb', emoji: '🔴', desc: 'Focusing or taking quiet time' },
-  { code: 'busy', label: 'Busy', emoji: '🟡', desc: 'Working or in meetings; replies will be delayed' },
+  { code: 'busy', label: 'Busy', emoji: '🟡', desc: 'Working or in meetings; replies delayed' },
   { code: 'sleeping', label: 'Sleeping', emoji: '🌙', desc: 'Resting; will reply when awake' },
-  { code: 'travelling', label: 'Travelling', emoji: '✈️', desc: 'On the road; intermittent connectivity' },
-  { code: 'studying', label: 'Studying', emoji: '📚', desc: 'Deep study session' },
+  { code: 'travelling', label: 'Travelling', emoji: '✈️', desc: 'On the road; intermittent signal' },
+  { code: 'studying', label: 'Studying', emoji: '📚', desc: 'Deep focus study session' },
   { code: 'family', label: 'Family Time', emoji: '🏕️', desc: 'Spending time with family' },
   { code: 'offline', label: 'Offline', emoji: '⚫', desc: 'Stepped away from NoteCircle' },
-  { code: 'other', label: 'Other', emoji: '✨', desc: 'Create your own custom status, emoji & note' }
+  { code: 'other', label: 'Custom Note', emoji: '✨', desc: 'Set custom status, emoji & note' }
 ];
 
 const CUSTOM_STATUS_EMOJIS = ['✨', '☕', '🎧', '🎨', '🌿', '💻', '🏃‍♂️', '🧘', '🍕', '🚀', '💡', '🌧️', '🍿', '🎸'];
@@ -60,32 +60,35 @@ export const AvailabilityModal: React.FC<AvailabilityModalProps> = ({ isOpen, on
       case '4_hours':
         expiresAt = new Date(now + 4 * 60 * 60 * 1000).toISOString();
         break;
-      case '8_hours':
+      case 'today': {
+        const midnight = new Date();
+        midnight.setHours(23, 59, 59, 999);
+        expiresAt = midnight.toISOString();
+        break;
+      }
+      case 'custom_time':
         expiresAt = new Date(now + 8 * 60 * 60 * 1000).toISOString();
         break;
-      case '1_day':
-        expiresAt = new Date(now + 24 * 60 * 60 * 1000).toISOString();
-        break;
-      case 'never':
+      case 'cleared':
         expiresAt = null;
         break;
-      default:
-        expiresAt = new Date(now + 4 * 60 * 60 * 1000).toISOString();
     }
 
-    const opt = AVAILABILITY_OPTIONS.find((o) => o.code === selectedCode) || AVAILABILITY_OPTIONS[0];
-    const finalLabel = selectedCode === 'other' ? (customLabel.trim() || 'Custom Status') : opt.label;
-    const finalEmoji = selectedCode === 'other' ? (customEmoji.trim() || '✨') : opt.emoji;
+    const chosenOption = AVAILABILITY_OPTIONS.find((o) => o.code === selectedCode);
+    const finalLabel = selectedCode === 'other' ? customLabel : (chosenOption?.label || 'Available');
+    const finalEmoji = selectedCode === 'other' ? customEmoji : (chosenOption?.emoji || '🟢');
+
+    const payload: Partial<UserAvailability> = {
+      code: selectedCode,
+      label: finalLabel,
+      emoji: finalEmoji,
+      customStatus: customStatus.trim() || undefined,
+      strictDnd,
+      expiresAt: expiresAt || undefined
+    };
 
     try {
-      await api.updateAvailability({
-        code: selectedCode,
-        label: finalLabel,
-        emoji: finalEmoji,
-        customStatus: customStatus.trim() || undefined,
-        expiresAt,
-        strictDnd
-      });
+      await api.updateAvailability(payload);
       await refreshUser();
       onClose();
     } catch (err: any) {
@@ -96,40 +99,43 @@ export const AvailabilityModal: React.FC<AvailabilityModalProps> = ({ isOpen, on
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-stone-950/70 backdrop-blur-xs">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/40 backdrop-blur-sm animate-in fade-in">
       <div 
-        className="bg-[#FFFDF9] dark:bg-[#151413] border-t-2 sm:border-2 border-stone-900 dark:border-stone-100 w-full max-w-lg rounded-t-3xl sm:rounded-3xl shadow-[6px_6px_0px_0px_#18181b] dark:shadow-[6px_6px_0px_0px_#faf8f5] overflow-hidden flex flex-col max-h-[92dvh] animate-in slide-in-from-bottom sm:slide-in-from-bottom-0 sm:zoom-in-95 duration-150"
+        className="florum-card bg-white dark:bg-[#181C1A] w-full max-w-lg rounded-3xl shadow-xl overflow-hidden flex flex-col max-h-[90vh] border border-black/[0.08] dark:border-white/[0.10]"
         role="dialog"
       >
-        {/* Mobile Pull Indicator */}
-        <div className="sm:hidden w-12 h-1 bg-stone-400 dark:bg-stone-600 rounded-full mx-auto mt-2.5" />
-
-        <div className="px-5 sm:px-6 py-3.5 sm:py-4 border-b-2 border-stone-900 dark:border-stone-800 flex items-center justify-between bg-amber-400/10 dark:bg-amber-400/5">
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="neo-badge bg-amber-400 text-stone-950">Circle Signal</span>
-              <h3 className="text-base font-black text-stone-950 dark:text-stone-50 font-display">Live Availability</h3>
+        {/* Header */}
+        <div className="p-4 sm:p-5 border-b border-black/[0.06] dark:border-white/[0.08] flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-2xl bg-gradient-to-br from-emerald-700 to-emerald-900 text-white flex items-center justify-center shadow-xs">
+              <Clock className="w-4 h-4 text-emerald-100" />
             </div>
-            <p className="text-[11px] text-stone-600 dark:text-stone-400 mt-0.5">Let your trusted people know your current vibe</p>
+            <div>
+              <h2 className="text-base font-bold font-display text-[#191D1A] dark:text-[#F5F7F5]">
+                Availability & Status
+              </h2>
+              <p className="text-[11px] text-[#8A968F]">Let your circle know when you're free</p>
+            </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-xl neo-btn text-stone-800 dark:text-stone-200"
-            title="Close"
+            className="p-2 rounded-xl text-[#8A968F] hover:text-[#191D1A] dark:hover:text-white hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors cursor-pointer"
+            aria-label="Close"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
+        {/* Form Body */}
         <form onSubmit={handleSubmit} className="p-4 sm:p-6 overflow-y-auto space-y-4">
           {error && (
-            <div className="p-3 bg-rose-100 dark:bg-rose-950 text-rose-900 dark:text-rose-200 text-xs font-bold rounded-xl border-2 border-rose-900 shadow-[2px_2px_0px_0px_#881337]">
+            <div className="p-3 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 rounded-2xl text-xs text-rose-800 dark:text-rose-200">
               {error}
             </div>
           )}
 
           {/* Status grid */}
-          <div className="grid grid-cols-2 gap-2 sm:gap-2.5">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             {AVAILABILITY_OPTIONS.map((opt) => {
               const isSelected = selectedCode === opt.code;
               return (
@@ -137,37 +143,39 @@ export const AvailabilityModal: React.FC<AvailabilityModalProps> = ({ isOpen, on
                   key={opt.code}
                   type="button"
                   onClick={() => setSelectedCode(opt.code)}
-                  className={`p-3 rounded-2xl border-2 text-left transition-all flex items-start gap-2.5 cursor-pointer ${
+                  className={`p-3 rounded-2xl border text-left transition-all flex flex-col gap-1 cursor-pointer ${
                     isSelected
-                      ? 'border-stone-950 bg-amber-300 dark:bg-amber-400/90 text-stone-950 shadow-[3px_3px_0px_0px_#18181b] translate-x-[-1px] translate-y-[-1px]'
-                      : 'border-stone-900/40 dark:border-stone-700 bg-white dark:bg-stone-850 hover:border-stone-900 dark:hover:border-stone-300 shadow-[2px_2px_0px_0px_rgba(0,0,0,0.1)]'
+                      ? 'border-emerald-600 bg-emerald-50/80 dark:bg-emerald-950/40 text-emerald-950 dark:text-emerald-100 ring-1 ring-emerald-600/30 shadow-xs'
+                      : 'border-black/[0.06] dark:border-white/[0.08] bg-[#FAF8F5] dark:bg-[#1E2421] hover:border-black/[0.12] dark:hover:border-white/[0.15]'
                   }`}
                 >
-                  <span className="text-2xl shrink-0 select-none">
-                    {opt.code === 'other' && isSelected ? customEmoji : opt.emoji}
-                  </span>
-                  <div className="min-w-0">
-                    <p className="text-xs font-black truncate">{opt.label}</p>
-                    <p className="text-[10px] opacity-80 leading-tight mt-0.5 line-clamp-1">{opt.desc}</p>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xl select-none">
+                      {opt.code === 'other' && isSelected ? customEmoji : opt.emoji}
+                    </span>
+                    {isSelected && (
+                      <span className="w-2 h-2 rounded-full bg-emerald-600" />
+                    )}
                   </div>
+                  <p className="text-xs font-semibold truncate text-[#191D1A] dark:text-[#F5F7F5]">{opt.label}</p>
+                  <p className="text-[10px] text-[#8A968F] line-clamp-1">{opt.desc}</p>
                 </button>
               );
             })}
           </div>
 
-          {/* Custom Status Expansion when 'Other / Custom' is chosen */}
+          {/* Custom Status Expansion */}
           {selectedCode === 'other' && (
-            <div className="p-3.5 bg-amber-50 dark:bg-stone-850 border-2 border-stone-900 dark:border-stone-200 rounded-2xl shadow-[3px_3px_0px_0px_#d97706] space-y-3 animate-in fade-in zoom-in-98 duration-100">
+            <div className="p-4 bg-emerald-50/60 dark:bg-emerald-950/30 border border-emerald-200/50 dark:border-emerald-800/50 rounded-2xl space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-black text-stone-900 dark:text-stone-100 flex items-center gap-1.5">
-                  <span>✨</span> Custom Status Details
+                <span className="text-xs font-semibold text-emerald-950 dark:text-emerald-200 flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-emerald-600" /> Custom Status Details
                 </span>
-                <span className="text-[10px] font-bold text-amber-700 dark:text-amber-400">Other Mode Active</span>
               </div>
 
               {/* Emoji quick selector */}
               <div>
-                <label className="text-[11px] font-bold text-stone-700 dark:text-stone-300 block mb-1">
+                <label className="text-[11px] font-medium text-[#58635C] dark:text-[#9DAAA0] block mb-1">
                   Choose Status Emoji
                 </label>
                 <div className="flex flex-wrap gap-1.5">
@@ -176,10 +184,10 @@ export const AvailabilityModal: React.FC<AvailabilityModalProps> = ({ isOpen, on
                       key={emoji}
                       type="button"
                       onClick={() => setCustomEmoji(emoji)}
-                      className={`w-8 h-8 rounded-xl border-2 text-base flex items-center justify-center transition-all ${
+                      className={`w-8 h-8 rounded-xl border text-sm flex items-center justify-center transition-all cursor-pointer ${
                         customEmoji === emoji
-                          ? 'border-stone-950 bg-amber-300 shadow-[2px_2px_0px_0px_#18181b] scale-110 font-bold'
-                          : 'border-stone-300 dark:border-stone-700 bg-white dark:bg-stone-800 hover:scale-105'
+                          ? 'border-emerald-600 bg-white dark:bg-[#181C1A] shadow-xs scale-105'
+                          : 'border-black/[0.06] dark:border-white/[0.08] bg-[#FAF8F5] dark:bg-[#1E2421]'
                       }`}
                     >
                       {emoji}
@@ -189,87 +197,85 @@ export const AvailabilityModal: React.FC<AvailabilityModalProps> = ({ isOpen, on
                     type="text"
                     value={customEmoji}
                     onChange={(e) => setCustomEmoji(e.target.value.slice(0, 4))}
-                    placeholder="or type"
-                    className="w-16 px-2 py-1 text-xs text-center border-2 border-stone-900 dark:border-stone-700 rounded-xl bg-white dark:bg-stone-800"
-                    title="Type any emoji"
+                    placeholder="emoji"
+                    className="w-16 px-2 py-1 text-xs text-center rounded-xl border border-black/[0.08] dark:border-white/[0.10] bg-white dark:bg-[#181C1A]"
+                    title="Type custom emoji"
                   />
                 </div>
               </div>
 
               {/* Custom Status Label */}
               <div>
-                <label className="text-[11px] font-bold text-stone-700 dark:text-stone-300 block mb-1">
+                <label className="text-[11px] font-medium text-[#58635C] dark:text-[#9DAAA0] block mb-1">
                   Status Name
                 </label>
                 <input
                   type="text"
                   value={customLabel}
                   onChange={(e) => setCustomLabel(e.target.value.slice(0, 30))}
-                  placeholder="e.g. Making Music, Gym Workout, Deep Coding..."
-                  className="w-full text-xs p-2.5 neo-input text-stone-900 dark:text-stone-100 font-bold"
+                  placeholder="e.g. Deep Work, Gym, Cooking"
+                  className="w-full text-xs p-2.5 florum-input"
                 />
               </div>
             </div>
           )}
 
-          {/* Custom status text */}
+          {/* Custom status text note */}
           <div>
-            <label className="text-xs font-black text-stone-900 dark:text-stone-100 block mb-1">
-              Custom Status Note (Optional)
+            <label className="text-xs font-semibold text-[#191D1A] dark:text-[#F5F7F5] block mb-1">
+              Status Message (Optional)
             </label>
             <input
               type="text"
               value={customStatus}
-              onChange={(e) => setCustomStatus(e.target.value.slice(0, 80))}
-              placeholder="e.g. Back in 2 hours, call if urgent..."
-              className="w-full text-xs p-2.5 neo-input text-stone-900 dark:text-stone-100 placeholder:text-stone-400"
+              onChange={(e) => setCustomStatus(e.target.value)}
+              placeholder="e.g. In meetings until 4 PM, call for urgent items"
+              className="w-full text-xs sm:text-sm p-3 florum-input"
+              maxLength={80}
             />
           </div>
 
-          {/* Duration */}
+          {/* Duration selector */}
           <NeoSelect
-            id="avail-duration"
-            label="Clear Status After"
+            id="status-duration"
+            label="Clear After"
             value={duration}
-            onChange={(val) => setDuration(val)}
+            onChange={setDuration}
             options={[
-              { value: '1_hour', label: '1 hour' },
-              { value: '4_hours', label: '4 hours' },
-              { value: '8_hours', label: '8 hours (Tonight)' },
-              { value: '1_day', label: '24 hours (Tomorrow)' },
-              { value: 'never', label: "Don't clear automatically" }
+              { value: '1_hour', label: '1 Hour' },
+              { value: '4_hours', label: '4 Hours (Standard)' },
+              { value: 'today', label: 'End of Today (Midnight)' },
+              { value: 'cleared', label: 'Do not auto-clear (Until manual change)' }
             ]}
           />
 
           {/* Strict DND toggle */}
-          <div className="p-3 bg-amber-50 dark:bg-[#181824] border-2 border-stone-900 dark:border-stone-700 rounded-2xl flex items-start gap-3 shadow-[2.5px_2.5px_0px_#121217]">
-            <Moon className="w-5 h-5 text-amber-700 dark:text-amber-400 shrink-0 mt-0.5 stroke-[2.5]" />
-            <div className="flex-1">
-              <NeoCheckbox
-                id="strict-dnd"
-                checked={strictDnd}
-                onChange={(checked) => setStrictDnd(checked)}
-                label="Enable Strict DND Mode"
-                description="When checked, incoming direct messages are blocked until this status expires."
-                className="w-full justify-between flex-row-reverse"
-              />
-            </div>
+          <div className="pt-2">
+            <NeoCheckbox
+              id="strict-dnd"
+              checked={strictDnd}
+              onChange={setStrictDnd}
+              label="Mute incoming notifications during this status"
+              description="Your circle will see your DND badge before sending notes."
+            />
           </div>
 
-          <div className="pt-2 flex items-center justify-end gap-2 border-t-2 border-stone-900 dark:border-stone-800 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+          {/* Actions */}
+          <div className="pt-3 border-t border-black/[0.06] dark:border-white/[0.08] flex items-center justify-end gap-2.5">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 neo-btn text-xs"
+              className="florum-btn-ghost text-xs py-2.5 px-4 cursor-pointer"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="px-5 py-2 neo-btn-primary text-xs"
+              className="florum-btn-primary text-xs py-2.5 px-5 font-semibold flex items-center gap-1.5 cursor-pointer shadow-sm"
             >
-              {isSubmitting ? 'Saving...' : 'Set Availability'}
+              <Check className="w-3.5 h-3.5" />
+              <span>{isSubmitting ? 'Saving...' : 'Set Availability'}</span>
             </button>
           </div>
         </form>

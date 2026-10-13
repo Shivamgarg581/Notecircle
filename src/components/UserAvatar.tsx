@@ -9,20 +9,20 @@ interface UserAvatarProps {
 }
 
 const SIZES = {
-  xs: 'w-6 h-6 text-[10px] font-black',
-  sm: 'w-8 h-8 text-xs font-black',
-  md: 'w-10 h-10 text-sm font-black',
-  lg: 'w-14 h-14 text-base font-black',
-  xl: 'w-20 h-20 text-xl font-black'
+  xs: 'w-6 h-6 text-[10px] font-semibold',
+  sm: 'w-8 h-8 text-xs font-semibold',
+  md: 'w-10 h-10 text-sm font-semibold',
+  lg: 'w-14 h-14 text-base font-bold',
+  xl: 'w-20 h-20 text-xl font-bold'
 };
 
 const COLOR_PALETTES = [
-  'bg-amber-300 dark:bg-amber-400 text-stone-950 border-stone-900',
-  'bg-orange-300 dark:bg-orange-400 text-stone-950 border-stone-900',
-  'bg-rose-300 dark:bg-rose-400 text-stone-950 border-stone-900',
-  'bg-yellow-300 dark:bg-yellow-400 text-stone-950 border-stone-900',
-  'bg-emerald-300 dark:bg-emerald-400 text-stone-950 border-stone-900',
-  'bg-sky-300 dark:bg-sky-400 text-stone-950 border-stone-900'
+  'bg-gradient-to-br from-emerald-600 to-teal-700 text-white',
+  'bg-gradient-to-br from-amber-600 to-orange-700 text-white',
+  'bg-gradient-to-br from-teal-700 to-emerald-800 text-white',
+  'bg-gradient-to-br from-stone-600 to-stone-800 text-white',
+  'bg-gradient-to-br from-rose-600 to-rose-700 text-white',
+  'bg-gradient-to-br from-cyan-700 to-blue-800 text-white'
 ];
 
 export const UserAvatar: React.FC<UserAvatarProps> = ({
@@ -52,7 +52,7 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({
 
   const onlineBadge = isOnline ? (
     <span 
-      className="absolute bottom-0 right-0 block w-3 h-3 rounded-full bg-emerald-400 border-2 border-stone-900 shadow-[1px_1px_0px_#121217]" 
+      className="absolute bottom-0 right-0 block w-3 h-3 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-[#181C1A] shadow-sm" 
       title="Online now"
     />
   ) : null;
@@ -65,7 +65,7 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({
           alt={name}
           referrerPolicy="no-referrer"
           onError={() => setImgError(true)}
-          className={`w-full h-full rounded-full object-cover border-2 border-stone-900 dark:border-stone-200 shadow-[1.5px_1.5px_0px_#121217] ${className}`}
+          className={`w-full h-full rounded-full object-cover ring-1 ring-black/5 dark:ring-white/10 shadow-sm ${className}`}
         />
         {onlineBadge}
       </div>
@@ -75,7 +75,7 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({
   return (
     <div className={`relative inline-block shrink-0 ${SIZES[size]}`}>
       <div
-        className={`w-full h-full ${colorClass} rounded-full flex items-center justify-center border-2 border-stone-900 dark:border-stone-200 shadow-[1.5px_1.5px_0px_#121217] select-none ${className}`}
+        className={`w-full h-full ${colorClass} rounded-full flex items-center justify-center ring-1 ring-black/5 dark:ring-white/10 shadow-sm select-none ${className}`}
         aria-label={name}
       >
         {initials}

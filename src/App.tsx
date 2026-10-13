@@ -15,6 +15,7 @@ import { BugReportModal } from './components/BugReportModal.tsx';
 import { SupportModal } from './components/SupportModal.tsx';
 import { AuthModal } from './components/AuthModal.tsx';
 import { AndroidFrame } from './components/AndroidFrame.tsx';
+import { NotebookLogoBadge, WelcomeCelebrationIllustration } from './components/NotebookAssets.tsx';
 import { ShieldCheck, LogIn } from 'lucide-react';
 
 function MainApp() {
@@ -108,49 +109,69 @@ function MainApp() {
     }
   };
 
+  const [showCelebration, setShowCelebration] = useState(() => {
+    return !!sessionStorage.getItem('notecircle_just_registered');
+  });
+
+  const handleDismissCelebration = () => {
+    sessionStorage.removeItem('notecircle_just_registered');
+    setShowCelebration(false);
+  };
+
   if (!currentUser) {
     return (
-      <div className="min-h-screen bg-[#FAF7F0] dark:bg-[#0D0D12] text-stone-950 dark:text-stone-50 flex flex-col font-sans transition-colors relative overflow-hidden">
-        {/* Playful Neo-Brutalist background geometric shapes */}
-        <div className="absolute top-12 left-10 w-24 h-24 rounded-full border-3 border-stone-900 bg-amber-300 -rotate-12 pointer-events-none hidden sm:block opacity-60 shadow-[4px_4px_0px_#121217]" />
-        <div className="absolute bottom-16 right-12 w-28 h-28 rounded-3xl border-3 border-stone-900 bg-rose-400 rotate-12 pointer-events-none hidden sm:block opacity-60 shadow-[4px_4px_0px_#121217]" />
-        <div className="absolute top-1/3 right-8 w-16 h-16 border-3 border-stone-900 bg-emerald-400 rotate-45 pointer-events-none hidden sm:block opacity-60 shadow-[3px_3px_0px_#121217]" />
-
-        <main className="flex-1 flex items-center justify-center p-4 relative z-10">
-          <div className="max-w-md w-full text-center space-y-6 animate-in fade-in">
+      <div className="min-h-screen bg-[var(--bg-canvas)] text-[#111111] dark:text-[#F5F2EB] flex flex-col font-sans transition-colors relative overflow-hidden bg-notebook-grain">
+        <main className="flex-1 flex items-center justify-center p-4 sm:p-6 relative z-10">
+          <div className="max-w-lg w-full text-center space-y-6 animate-in fade-in duration-200">
+            {/* Distinctive Neo-Brutalist Logo Mark */}
             <div className="inline-flex items-center justify-center">
-              <div className="w-20 h-20 bg-amber-400 border-3 border-stone-900 rounded-3xl flex items-center justify-center shadow-[6px_6px_0px_#121217] -rotate-3 hover:rotate-0 transition-transform">
-                <span className="font-display font-black text-3xl tracking-tighter text-stone-950">NC</span>
-              </div>
+              <NotebookLogoBadge size="lg" />
             </div>
 
             <div className="space-y-2">
-              <div className="inline-block">
-                <span className="neo-badge bg-stone-950 text-white text-[11px] font-black uppercase tracking-wider mb-2">
-                  Privacy-First Social
-                </span>
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-[#FFCA05] border-2 border-[#111111] text-[11px] font-black text-[#111111] shadow-[2px_2px_0px_#111111] uppercase tracking-wider">
+                <ShieldCheck className="w-3.5 h-3.5 stroke-[2.5]" />
+                <span>Zero Public Discovery · E2E Encrypted</span>
               </div>
-              <h1 className="text-4xl sm:text-5xl font-black text-stone-950 dark:text-white tracking-tight font-display uppercase">
+              <h1 className="text-3xl sm:text-5xl font-black text-[#111111] dark:text-[#F5F2EB] tracking-tight font-display">
                 NoteCircle
               </h1>
-              <p className="text-xs sm:text-sm font-bold text-stone-600 dark:text-stone-400 mt-2 max-w-sm mx-auto leading-relaxed">
-                Quiet status notes, live availability signals, and end-to-end encrypted messaging for your trusted circle. No ads. No feeds engineered for doomscrolling.
+              <p className="text-sm sm:text-base font-semibold text-[#4A4742] dark:text-[#C8C5BE] max-w-md mx-auto leading-relaxed">
+                Private notes & chat for your trusted circle.
+              </p>
+              <p className="text-xs font-black text-[#111111] dark:text-[#FFCA05] uppercase tracking-wider">
+                Private by default · Temporary by design · Meaningful by choice
               </p>
             </div>
 
-            <div className="p-6 sm:p-7 neo-card bg-white dark:bg-[#161622] shadow-[8px_8px_0px_#121217] space-y-4">
+            {/* 3 Interactive Tactile Notebook Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-left">
+              <div className="p-3.5 rounded-2xl bg-[var(--card-surface)] border-2 border-[#111111] dark:border-[#3E3E4A] shadow-[3px_3px_0px_#111111] space-y-1">
+                <span className="text-lg">🚫</span>
+                <p className="text-xs font-black text-[#111111] dark:text-[#F5F2EB]">No Public Feeds</p>
+                <p className="text-[11px] text-[#4A4742] dark:text-[#C8C5BE] leading-tight">Only people you approve see what you share.</p>
+              </div>
+              <div className="p-3.5 rounded-2xl bg-[var(--card-surface)] border-2 border-[#111111] dark:border-[#3E3E4A] shadow-[3px_3px_0px_#111111] space-y-1">
+                <span className="text-lg">⏱️</span>
+                <p className="text-xs font-black text-[#111111] dark:text-[#F5F2EB]">Temporary Notes</p>
+                <p className="text-[11px] text-[#4A4742] dark:text-[#C8C5BE] leading-tight">Status updates and thoughts expire naturally.</p>
+              </div>
+              <div className="p-3.5 rounded-2xl bg-[var(--card-surface)] border-2 border-[#111111] dark:border-[#3E3E4A] shadow-[3px_3px_0px_#111111] space-y-1">
+                <span className="text-lg">🔐</span>
+                <p className="text-xs font-black text-[#111111] dark:text-[#F5F2EB]">Encrypted Chat</p>
+                <p className="text-[11px] text-[#4A4742] dark:text-[#C8C5BE] leading-tight">Client-side encryption. The server stores zero plaintext.</p>
+              </div>
+            </div>
+
+            {/* Action Box */}
+            <div className="p-6 rounded-3xl bg-[var(--card-surface)] border-2.5 border-[#111111] dark:border-[#3E3E4A] shadow-[5px_5px_0px_#111111] space-y-4">
               <button
                 onClick={() => setIsAuthModalOpen(true)}
-                className="w-full py-3.5 px-6 neo-btn-primary rounded-2xl text-sm font-black flex items-center justify-center gap-2 cursor-pointer uppercase tracking-wider"
+                className="w-full py-3.5 px-6 rounded-2xl bg-[#FFCA05] text-[#111111] border-2.5 border-[#111111] font-black text-sm uppercase tracking-wider flex items-center justify-center gap-2 shadow-[4px_4px_0px_#111111] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[5px_5px_0px_#111111] active:translate-x-[2px] active:translate-y-[2px] active:shadow-[1px_1px_0px_#111111] transition-all cursor-pointer"
               >
-                <LogIn className="w-4 h-4 stroke-[3]" />
+                <LogIn className="w-4 h-4 stroke-[2.5]" />
                 <span>Enter Your Private Circle</span>
               </button>
-              <div className="flex flex-wrap items-center justify-center gap-2 text-[11px] font-black text-stone-700 dark:text-stone-300 pt-2 border-t-2 border-stone-900 dark:border-stone-800">
-                <span className="px-2 py-0.5 bg-amber-200 dark:bg-amber-950/80 border border-stone-900 rounded-lg">🔒 Zero Telemetry</span>
-                <span className="px-2 py-0.5 bg-rose-200 dark:bg-rose-950/80 border border-stone-900 rounded-lg">⏳ Auto-Expiring Notes</span>
-                <span className="px-2 py-0.5 bg-emerald-200 dark:bg-emerald-950/80 border border-stone-900 rounded-lg">🛡️ E2E Encrypted</span>
-              </div>
             </div>
           </div>
         </main>
@@ -164,7 +185,7 @@ function MainApp() {
   }
 
   return (
-    <div className="min-h-screen bg-[#FAF7F0] dark:bg-[#0D0D12] text-stone-900 dark:text-stone-100 flex flex-col font-sans transition-colors">
+    <div className="min-h-screen bg-[#FAF8F5] dark:bg-[#111413] text-[#191D1A] dark:text-[#F5F7F5] flex flex-col font-sans transition-colors">
       
       {/* Main Glassmorphic Navigation */}
       <Navigation
@@ -237,6 +258,13 @@ function MainApp() {
         isOpen={isSupportOpen}
         onClose={() => setIsSupportOpen(false)}
       />
+
+      {showCelebration && currentUser && (
+        <WelcomeCelebrationIllustration
+          username={currentUser.username}
+          onDismiss={handleDismissCelebration}
+        />
+      )}
     </div>
   );
 }

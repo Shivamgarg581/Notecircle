@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { getServerSupabase } from './supabase.ts';
+import { normalizeEmail } from './emailNormalizer.ts';
 import type { 
   User, 
   Connection, 
@@ -152,6 +153,48 @@ class SupabaseDatabaseManager {
   private verifiedSafetyNumbers: { userId: string; contactId: string; verifiedAt: string }[] = [];
   private registrationOtps: any[] = [];
   private emailLogs: any[] = [];
+  private inFlightRegistrations = new Set<string>();
+
+  public acquireRegistrationLock(normalizedEmail: string): boolean {
+    if (this.inFlightRegistrations.has(normalizedEmail)) {
+      return false;
+    }
+    this.inFlightRegistrations.add(normalizedEmail);
+    return true;
+  }
+
+  public releaseRegistrationLock(normalizedEmail: string): void {
+    this.inFlightRegistrations.delete(normalizedEmail);
+  }
+
+  /**
+   * Enforces strictly one account per normalized Gmail address,
+   * handling case-insensitivity, dots, and plus-addressing for Gmail only.
+   */
+  public isEmailRegistered(
+    email: string,
+    excludeUserId?: string
+  ): { taken: boolean; existingUsername?: string; isGmailConflict?: boolean; normalizedEmail: string } {
+    const target = normalizeEmail(email);
+    const users = this.memoryStore.users.filter((u) => u.id !== excludeUserId && u.email);
+
+    for (const u of users) {
+      const existing = normalizeEmail(u.email);
+      if (existing.normalized === target.normalized) {
+        return {
+          taken: true,
+          existingUsername: u.username,
+          isGmailConflict: target.isGmail,
+          normalizedEmail: target.normalized
+        };
+      }
+    }
+
+    return {
+      taken: false,
+      normalizedEmail: target.normalized
+    };
+  }
 
   private isInitialized = false;
   private initPromise: Promise<void> | null = null;

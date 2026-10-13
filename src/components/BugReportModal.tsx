@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Bug, CheckCircle, Clock, AlertCircle, Send } from 'lucide-react';
+import { X, Bug, CheckCircle, Clock, AlertCircle, Send, Paperclip } from 'lucide-react';
 import { api } from '../services/api.ts';
 import { useAuth } from '../context/AuthContext.tsx';
 import type { BugReport } from '../types/index.ts';
@@ -65,21 +65,18 @@ export const BugReportModal: React.FC<BugReportModalProps> = ({ isOpen, onClose 
         errorIdentifier: errorId.trim() || undefined,
         screenshot: screenshot || undefined,
         deviceInfo: {
-          browser: navigator.userAgent.substring(0, 80),
-          os: navigator.platform || 'Unknown OS',
-          viewport: `${window.innerWidth}x${window.innerHeight}`,
-          isAndroidFrame: androidPreview
+          userAgent: navigator.userAgent,
+          platform: navigator.platform,
+          screen: `${window.innerWidth}x${window.innerHeight}`,
+          isAndroidPreview: androidPreview
         }
       });
+      setSuccessMsg(true);
       setDescription('');
       setErrorId('');
       setScreenshot(null);
-      setSuccessMsg(true);
       await fetchBugs();
-      setTimeout(() => {
-        setSuccessMsg(false);
-        setTab('history');
-      }, 1500);
+      setTimeout(() => setSuccessMsg(false), 3000);
     } catch (err: any) {
       alert(err.message || 'Failed to submit bug report');
     } finally {
@@ -88,53 +85,67 @@ export const BugReportModal: React.FC<BugReportModalProps> = ({ isOpen, onClose 
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-950/70 backdrop-blur-xs">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/40 backdrop-blur-sm animate-in fade-in">
       <div 
-        className="neo-card bg-white dark:bg-[#161622] w-full max-w-lg rounded-3xl shadow-[6px_6px_0px_#121217] overflow-hidden flex flex-col max-h-[90vh]"
+        className="florum-card bg-white dark:bg-[#181C1A] w-full max-w-lg rounded-3xl shadow-xl overflow-hidden flex flex-col max-h-[90vh] border border-black/[0.08] dark:border-white/[0.10]"
         role="dialog"
       >
-        <div className="px-6 py-4 border-b-2 border-stone-900 dark:border-stone-800 flex items-center justify-between">
+        {/* Header */}
+        <div className="p-4 sm:p-5 border-b border-black/[0.06] dark:border-white/[0.08] flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-amber-400 border-2 border-stone-900 flex items-center justify-center text-stone-950 font-bold shadow-[2px_2px_0px_#121217]">
-              <Bug className="w-4 h-4 stroke-[2.5]" />
+            <div className="w-9 h-9 rounded-2xl bg-gradient-to-br from-emerald-700 to-emerald-900 text-white flex items-center justify-center shadow-xs">
+              <Bug className="w-4 h-4 text-emerald-100" />
             </div>
-            <h3 className="text-sm font-black text-stone-900 dark:text-stone-100 uppercase tracking-wide">Report Bug / Feedback</h3>
+            <div>
+              <h2 className="text-base font-bold font-display text-[#191D1A] dark:text-[#F5F7F5]">
+                Report Bug / Feedback
+              </h2>
+              <p className="text-[11px] text-[#8A968F]">Help keep NoteCircle secure and reliable</p>
+            </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1 rounded-xl neo-btn text-stone-900 dark:text-stone-100 bg-white dark:bg-[#1A1A26] cursor-pointer"
+            className="p-2 rounded-xl text-[#8A968F] hover:text-[#191D1A] dark:hover:text-white hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors cursor-pointer"
+            aria-label="Close"
           >
-            <X className="w-5 h-5 stroke-[2.5]" />
+            <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Tab Header */}
-        <div className="flex items-center px-4 sm:px-6 py-2.5 border-b-2 border-stone-900 dark:border-stone-800 gap-2 bg-stone-50 dark:bg-[#14141F]">
-          <button
-            onClick={() => setTab('new')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${
-              tab === 'new' ? 'bg-amber-400 text-stone-950 border-2 border-stone-900 shadow-[2px_2px_0px_#121217]' : 'text-stone-600 dark:text-stone-400 hover:text-stone-950 dark:hover:text-white'
-            }`}
-          >
-            New Bug Report
-          </button>
-          <button
-            onClick={() => setTab('history')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${
-              tab === 'history' ? 'bg-amber-400 text-stone-950 border-2 border-stone-900 shadow-[2px_2px_0px_#121217]' : 'text-stone-600 dark:text-stone-400 hover:text-stone-950 dark:hover:text-white'
-            }`}
-          >
-            My Reports ({myBugs.length})
-          </button>
+        {/* Segmented Tab Header */}
+        <div className="px-4 sm:px-6 pt-4 pb-0">
+          <div className="flex items-center p-1 bg-[#F5F2EB] dark:bg-[#1E2421] border border-black/[0.04] dark:border-white/[0.06] rounded-2xl text-xs font-semibold">
+            <button
+              onClick={() => setTab('new')}
+              className={`flex-1 py-1.5 px-3 rounded-xl transition-all text-center cursor-pointer ${
+                tab === 'new'
+                  ? 'bg-white dark:bg-[#252B28] text-[#191D1A] dark:text-white shadow-xs font-bold'
+                  : 'text-[#58635C] dark:text-[#9DAAA0] hover:text-[#191D1A] dark:hover:text-white'
+              }`}
+            >
+              New Bug Report
+            </button>
+            <button
+              onClick={() => setTab('history')}
+              className={`flex-1 py-1.5 px-3 rounded-xl transition-all text-center cursor-pointer ${
+                tab === 'history'
+                  ? 'bg-white dark:bg-[#252B28] text-[#191D1A] dark:text-white shadow-xs font-bold'
+                  : 'text-[#58635C] dark:text-[#9DAAA0] hover:text-[#191D1A] dark:hover:text-white'
+              }`}
+            >
+              My Reports ({myBugs.length})
+            </button>
+          </div>
         </div>
 
-        <div className="p-6 overflow-y-auto">
+        {/* Content Body */}
+        <div className="p-4 sm:p-6 overflow-y-auto space-y-4">
           {tab === 'new' ? (
             <form onSubmit={handleSubmit} className="space-y-4">
               {successMsg && (
-                <div className="p-3 bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 text-xs rounded-xl border border-amber-200 dark:border-amber-800 flex items-center gap-2">
-                  <CheckCircle className="w-4 h-4 text-amber-600 shrink-0" />
-                  <span>Report submitted successfully! Thank you for helping keep NoteCircle reliable.</span>
+                <div className="p-3.5 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 text-xs rounded-2xl border border-emerald-200 dark:border-emerald-800 flex items-center gap-2">
+                  <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>Report submitted successfully! Thank you for helping NoteCircle.</span>
                 </div>
               )}
 
@@ -146,15 +157,15 @@ export const BugReportModal: React.FC<BugReportModalProps> = ({ isOpen, onClose 
                 options={[
                   { value: 'notes', label: 'Notes & Expiration' },
                   { value: 'chat', label: 'Private Chat & Messaging' },
-                  { value: 'privacy', label: 'Privacy & Authorization' },
-                  { value: 'sync', label: 'Local-First Sync & Offline' },
-                  { value: 'ui', label: 'UI & Responsive Layout' },
+                  { value: 'privacy', label: 'Privacy & Permissions' },
+                  { value: 'sync', label: 'Local-First Sync & Storage' },
+                  { value: 'ui', label: 'UI & Layout Experience' },
                   { value: 'other', label: 'General Feedback / Other' }
                 ]}
               />
 
               <div>
-                <label className="text-[11px] font-black uppercase tracking-wider text-stone-900 dark:text-stone-200 block mb-1 font-display">
+                <label className="text-xs font-semibold text-[#191D1A] dark:text-[#F5F7F5] block mb-1.5">
                   Description
                 </label>
                 <textarea
@@ -162,115 +173,90 @@ export const BugReportModal: React.FC<BugReportModalProps> = ({ isOpen, onClose 
                   onChange={(e) => setDescription(e.target.value)}
                   rows={4}
                   placeholder="What happened? Include steps to reproduce or expected behavior..."
-                  className="w-full text-xs font-bold p-3 neo-input text-stone-900 dark:text-stone-100 placeholder:text-stone-400 dark:placeholder:text-stone-500 resize-none"
+                  className="w-full text-xs sm:text-sm font-medium p-3 florum-input resize-none"
                   required
                 />
               </div>
 
               <div>
-                <label className="text-[11px] font-black uppercase tracking-wider text-stone-900 dark:text-stone-200 block mb-1 font-display">
-                  Error Identifier / Code (Optional)
+                <label className="text-xs font-semibold text-[#191D1A] dark:text-[#F5F7F5] block mb-1.5">
+                  Error Code / Identifier (Optional)
                 </label>
                 <input
                   type="text"
                   value={errorId}
                   onChange={(e) => setErrorId(e.target.value)}
                   placeholder="e.g. ERR_SYNC_TIMEOUT_403"
-                  className="w-full text-xs font-bold p-3 neo-input text-stone-900 dark:text-stone-100"
+                  className="w-full text-xs sm:text-sm font-medium p-3 florum-input"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-stone-700 dark:text-stone-300 block mb-1">Screenshot / Attachment (Optional)</label>
-                <div className="flex items-center gap-3">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleScreenshotChange}
-                    className="text-xs text-stone-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-amber-50 dark:file:bg-amber-950/40 file:text-amber-800 dark:file:text-amber-300 hover:file:bg-amber-100 cursor-pointer"
-                  />
-                  {screenshot && (
+                <label className="text-xs font-semibold text-[#191D1A] dark:text-[#F5F7F5] block mb-1.5">
+                  Screenshot (Optional)
+                </label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleScreenshotChange}
+                  className="block w-full text-xs text-[#58635C] dark:text-[#9DAAA0] file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-emerald-50 dark:file:bg-emerald-950/60 file:text-emerald-800 dark:file:text-emerald-200 hover:file:bg-emerald-100 cursor-pointer"
+                />
+                {screenshot && (
+                  <div className="mt-2 relative rounded-2xl overflow-hidden border border-black/[0.08] dark:border-white/[0.08] max-h-36">
+                    <img src={screenshot} alt="Screenshot preview" className="w-full object-cover" />
                     <button
                       type="button"
                       onClick={() => setScreenshot(null)}
-                      className="text-[11px] text-rose-500 hover:underline"
+                      className="absolute top-2 right-2 p-1.5 bg-black/60 text-white rounded-lg text-xs"
                     >
                       Remove
                     </button>
-                  )}
-                </div>
-                {screenshot && (
-                  <div className="mt-2 relative w-24 h-16 rounded-xl overflow-hidden border border-stone-200 dark:border-stone-700">
-                    <img src={screenshot} alt="Screenshot preview" className="w-full h-full object-cover" />
                   </div>
                 )}
               </div>
 
-              <div className="p-3 bg-stone-50 dark:bg-stone-850 border border-stone-200/80 dark:border-stone-750 rounded-xl text-[11px] text-stone-500 dark:text-stone-400">
-                <span className="font-semibold text-stone-700 dark:text-stone-300">Diagnostics automatically included:</span>{' '}
-                Browser: {navigator.userAgent.substring(0, 30)}... | Viewport: {window.innerWidth}x{window.innerHeight} | Mode: {androidPreview ? 'Android Shell' : 'Web Desktop'}
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-2 border-t-2 border-stone-900 dark:border-stone-800">
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="px-3.5 py-2 text-xs font-bold text-stone-600 dark:text-stone-400 hover:underline cursor-pointer"
-                >
-                  Cancel
-                </button>
+              <div className="pt-2 flex justify-end">
                 <button
                   type="submit"
-                  disabled={isSubmitting || !description.trim()}
-                  className="px-5 py-2.5 neo-btn-primary disabled:opacity-50 text-stone-950 rounded-xl text-xs font-black flex items-center gap-1.5 cursor-pointer"
+                  disabled={isSubmitting}
+                  className="florum-btn-primary text-xs py-2.5 px-5 font-semibold flex items-center gap-1.5 cursor-pointer shadow-sm"
                 >
-                  <Send className="w-3.5 h-3.5 stroke-[2.5]" />
-                  <span>{isSubmitting ? 'Sending...' : 'Submit Report'}</span>
+                  <Send className="w-3.5 h-3.5" />
+                  <span>{isSubmitting ? 'Submitting...' : 'Submit Report'}</span>
                 </button>
               </div>
             </form>
           ) : (
             <div className="space-y-3">
               {myBugs.length === 0 ? (
-                <p className="text-xs font-bold text-stone-400 text-center py-8">
-                  You haven't submitted any bug reports yet.
-                </p>
+                <div className="text-center py-12 text-[#8A968F]">
+                  <Bug className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                  <p className="text-xs font-semibold text-[#191D1A] dark:text-[#F5F7F5]">No submitted reports</p>
+                  <p className="text-[11px] mt-0.5">Your submitted bug reports will appear here.</p>
+                </div>
               ) : (
-                myBugs.map((b) => (
-                  <div key={b.id} className="p-4 bg-white dark:bg-[#1A1A28] rounded-2xl border-2 border-stone-900 space-y-2 shadow-[3px_3px_0px_#121217]">
+                myBugs.map((bug) => (
+                  <div
+                    key={bug.id}
+                    className="p-3.5 rounded-2xl border border-black/[0.06] dark:border-white/[0.08] bg-[#FAF8F5] dark:bg-[#1E2421] space-y-1.5"
+                  >
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-black text-stone-900 dark:text-stone-100 uppercase tracking-wide">
-                        {b.category}
+                      <span className="text-[11px] font-semibold uppercase tracking-wider text-emerald-800 dark:text-emerald-300">
+                        {bug.category}
                       </span>
-                      <span className={`text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full border border-stone-900 ${
-                        b.status === 'RESOLVED'
-                          ? 'bg-emerald-300 text-stone-950'
-                          : b.status === 'IN_PROGRESS'
-                          ? 'bg-sky-300 text-stone-950'
-                          : b.status === 'REVIEWING'
-                          ? 'bg-purple-300 text-stone-950'
-                          : 'bg-amber-300 text-stone-950'
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${
+                        bug.status === 'RESOLVED' 
+                          ? 'bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-200' 
+                          : 'bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-200'
                       }`}>
-                        {b.status}
+                        {bug.status}
                       </span>
                     </div>
-                    <p className="text-xs font-medium text-stone-900 dark:text-stone-100">{b.description}</p>
-                    {b.screenshot && (
-                      <div className="pt-1">
-                        <img
-                          src={b.screenshot}
-                          alt="Report screenshot"
-                          className="h-20 w-auto rounded-xl border-2 border-stone-900 object-cover"
-                        />
-                      </div>
-                    )}
-                    {b.resolutionNote && (
-                      <p className="text-[11px] font-bold text-stone-950 dark:text-amber-200 bg-amber-200 dark:bg-amber-950/60 p-2.5 rounded-xl border border-stone-900">
-                        <strong>Resolution Note:</strong> {b.resolutionNote}
-                      </p>
-                    )}
-                    <span className="text-[10px] font-bold text-stone-400 block pt-1 border-t border-stone-200 dark:border-stone-800">
-                      Submitted on {new Date(b.createdAt).toLocaleDateString()}
+                    <p className="text-xs text-[#191D1A] dark:text-[#F5F7F5] leading-relaxed">
+                      {bug.description}
+                    </p>
+                    <span className="text-[10px] text-[#8A968F] block">
+                      {new Date(bug.createdAt).toLocaleDateString()}
                     </span>
                   </div>
                 ))

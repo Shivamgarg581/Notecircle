@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, HelpCircle, Shield, FileText, Send, ChevronDown, CheckCircle } from 'lucide-react';
+import { X, HelpCircle, Shield, FileText, Send, ChevronDown, CheckCircle, Mail, MessageSquare } from 'lucide-react';
 import { api } from '../services/api.ts';
 
 interface SupportModalProps {
@@ -9,7 +9,7 @@ interface SupportModalProps {
 }
 
 export const SupportModal: React.FC<SupportModalProps> = ({ isOpen, onClose, onOpenBugReport }) => {
-  const [activeTab, setActiveTab] = useState<'faq' | 'safety' | 'policies' | 'recovery' | 'contact'>('faq');
+  const [activeTab, setActiveTab] = useState<'faq' | 'safety' | 'policies' | 'contact'>('faq');
   const [faqs, setFaqs] = useState<Array<{ q: string; a: string }>>([]);
   const [policies, setPolicies] = useState<{ terms: string; privacyPolicy: string; communityGuidelines: string } | null>(null);
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
@@ -48,190 +48,127 @@ export const SupportModal: React.FC<SupportModalProps> = ({ isOpen, onClose, onO
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-950/70 backdrop-blur-xs">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/40 backdrop-blur-sm animate-in fade-in">
       <div 
-        className="neo-card bg-white dark:bg-[#161622] w-full max-w-xl rounded-3xl shadow-[6px_6px_0px_#121217] overflow-hidden flex flex-col max-h-[90vh]"
+        className="florum-card bg-white dark:bg-[#181C1A] w-full max-w-xl rounded-3xl shadow-xl overflow-hidden flex flex-col max-h-[90vh] border border-black/[0.08] dark:border-white/[0.10]"
         role="dialog"
       >
-        <div className="px-6 py-4 border-b-2 border-stone-900 dark:border-stone-800 flex items-center justify-between">
+        {/* Header */}
+        <div className="p-4 sm:p-5 border-b border-black/[0.06] dark:border-white/[0.08] flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-amber-400 border-2 border-stone-900 flex items-center justify-center text-stone-950 font-bold shadow-[2px_2px_0px_#121217]">
-              <HelpCircle className="w-4 h-4 stroke-[2.5]" />
+            <div className="w-9 h-9 rounded-2xl bg-gradient-to-br from-emerald-700 to-emerald-900 text-white flex items-center justify-center shadow-xs">
+              <HelpCircle className="w-4 h-4 text-emerald-100" />
             </div>
-            <h3 className="text-sm font-black text-stone-900 dark:text-stone-100 uppercase tracking-wide">Help, Safety & Policies</h3>
+            <div>
+              <h2 className="text-base font-bold font-display text-[#191D1A] dark:text-[#F5F7F5]">
+                Help & Safety Center
+              </h2>
+              <p className="text-[11px] text-[#8A968F]">Guides, privacy architecture & support</p>
+            </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1 rounded-xl neo-btn text-stone-900 dark:text-stone-100 bg-white dark:bg-[#1A1A26] cursor-pointer"
+            className="p-2 rounded-xl text-[#8A968F] hover:text-[#191D1A] dark:hover:text-white hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors cursor-pointer"
+            aria-label="Close"
           >
-            <X className="w-5 h-5 stroke-[2.5]" />
+            <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Tab Header */}
-        <div className="flex items-center px-4 sm:px-6 py-2.5 border-b-2 border-stone-900 dark:border-stone-800 gap-2 text-xs overflow-x-auto scrollbar-none bg-stone-50 dark:bg-[#14141F]">
-          <button
-            onClick={() => setActiveTab('faq')}
-            className={`px-3 py-1.5 rounded-xl font-black uppercase tracking-wider whitespace-nowrap transition-all cursor-pointer ${
-              activeTab === 'faq' ? 'bg-amber-400 text-stone-950 border-2 border-stone-900 shadow-[2px_2px_0px_#121217]' : 'text-stone-600 dark:text-stone-400 hover:text-stone-950 dark:hover:text-white'
-            }`}
-          >
-            FAQs
-          </button>
-          <button
-            onClick={() => setActiveTab('safety')}
-            className={`px-3 py-1.5 rounded-xl font-black uppercase tracking-wider whitespace-nowrap transition-all cursor-pointer ${
-              activeTab === 'safety' ? 'bg-amber-400 text-stone-950 border-2 border-stone-900 shadow-[2px_2px_0px_#121217]' : 'text-stone-600 dark:text-stone-400 hover:text-stone-950 dark:hover:text-white'
-            }`}
-          >
-            Safety
-          </button>
-          <button
-            onClick={() => setActiveTab('policies')}
-            className={`px-3 py-1.5 rounded-xl font-black uppercase tracking-wider whitespace-nowrap transition-all cursor-pointer ${
-              activeTab === 'policies' ? 'bg-amber-400 text-stone-950 border-2 border-stone-900 shadow-[2px_2px_0px_#121217]' : 'text-stone-600 dark:text-stone-400 hover:text-stone-950 dark:hover:text-white'
-            }`}
-          >
-            Policies
-          </button>
-          <button
-            onClick={() => setActiveTab('recovery')}
-            className={`px-3 py-1.5 rounded-xl font-black uppercase tracking-wider whitespace-nowrap transition-all cursor-pointer ${
-              activeTab === 'recovery' ? 'bg-amber-400 text-stone-950 border-2 border-stone-900 shadow-[2px_2px_0px_#121217]' : 'text-stone-600 dark:text-stone-400 hover:text-stone-950 dark:hover:text-white'
-            }`}
-          >
-            Recovery
-          </button>
-          <button
-            onClick={() => setActiveTab('contact')}
-            className={`px-3 py-1.5 rounded-xl font-black uppercase tracking-wider whitespace-nowrap transition-all cursor-pointer ${
-              activeTab === 'contact' ? 'bg-amber-400 text-stone-950 border-2 border-stone-900 shadow-[2px_2px_0px_#121217]' : 'text-stone-600 dark:text-stone-400 hover:text-stone-950 dark:hover:text-white'
-            }`}
-          >
-            Contact
-          </button>
+        {/* Tab switcher */}
+        <div className="px-4 sm:px-6 pt-4 pb-0">
+          <div className="flex items-center gap-1 overflow-x-auto p-1 bg-[#F5F2EB] dark:bg-[#1E2421] border border-black/[0.04] dark:border-white/[0.06] rounded-2xl text-xs font-semibold scrollbar-none">
+            {[
+              { id: 'faq', label: 'FAQs' },
+              { id: 'safety', label: 'Privacy & Cryptography' },
+              { id: 'policies', label: 'Policies' },
+              { id: 'contact', label: 'Contact Us' }
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as any)}
+                className={`py-1.5 px-3 rounded-xl transition-all whitespace-nowrap cursor-pointer ${
+                  activeTab === tab.id
+                    ? 'bg-white dark:bg-[#252B28] text-[#191D1A] dark:text-white shadow-xs font-bold'
+                    : 'text-[#58635C] dark:text-[#9DAAA0] hover:text-[#191D1A] dark:hover:text-white'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
         </div>
 
-        {/* Tab Body */}
-        <div className="p-6 overflow-y-auto space-y-4">
+        {/* Body Content */}
+        <div className="p-4 sm:p-6 overflow-y-auto space-y-4">
           {activeTab === 'faq' && (
             <div className="space-y-2.5">
-              {faqs.map((faq, idx) => {
-                const isOpen = openFaqIndex === idx;
-                return (
-                  <div key={idx} className="border border-stone-200/80 dark:border-stone-800 rounded-2xl bg-white dark:bg-stone-850 overflow-hidden shadow-xs">
-                    <button
-                      onClick={() => setOpenFaqIndex(isOpen ? null : idx)}
-                      className="w-full text-left p-3.5 flex items-center justify-between gap-2 hover:bg-stone-50 dark:hover:bg-stone-800 transition-colors"
+              {faqs.length === 0 ? (
+                <p className="text-xs text-[#8A968F] text-center py-8">Loading FAQs...</p>
+              ) : (
+                faqs.map((faq, idx) => {
+                  const isOpen = openFaqIndex === idx;
+                  return (
+                    <div
+                      key={idx}
+                      className="border border-black/[0.06] dark:border-white/[0.08] rounded-2xl bg-[#FAF8F5] dark:bg-[#1E2421] overflow-hidden"
                     >
-                      <span className="text-xs font-bold text-stone-900 dark:text-stone-100">{faq.q}</span>
-                      <ChevronDown className={`w-4 h-4 text-stone-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
-                    </button>
-                    {isOpen && (
-                      <div className="px-3.5 pb-3.5 text-xs text-stone-600 dark:text-stone-400 leading-relaxed border-t border-stone-100 dark:border-stone-800 pt-2 bg-stone-50/50 dark:bg-stone-900/50">
-                        {faq.a}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
+                      <button
+                        onClick={() => setOpenFaqIndex(isOpen ? null : idx)}
+                        className="w-full text-left p-3.5 flex items-center justify-between text-xs font-semibold text-[#191D1A] dark:text-[#F5F7F5] cursor-pointer"
+                      >
+                        <span>{faq.q}</span>
+                        <ChevronDown className={`w-4 h-4 text-[#8A968F] transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                      </button>
+                      {isOpen && (
+                        <div className="px-3.5 pb-3.5 pt-0 text-xs text-[#58635C] dark:text-[#9DAAA0] leading-relaxed border-t border-black/[0.04] dark:border-white/[0.06] mt-1 pt-2">
+                          {faq.a}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
+              )}
             </div>
           )}
 
           {activeTab === 'safety' && (
-            <div className="space-y-3 text-xs text-stone-700 dark:text-stone-300">
-              <div className="p-4 bg-amber-50/80 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 rounded-2xl">
-                <h4 className="font-bold text-amber-950 dark:text-amber-200 flex items-center gap-1.5 mb-1 text-sm">
-                  <Shield className="w-4 h-4 text-amber-700 dark:text-amber-400" />
-                  <span>Privacy-First Social Atmosphere</span>
-                </h4>
-                <p className="text-amber-900 dark:text-amber-300 leading-relaxed">
-                  NoteCircle protects you from harassment and public surveillance by ensuring that no stranger can read your notes or send unapproved messages.
+            <div className="space-y-3 text-xs leading-relaxed text-[#58635C] dark:text-[#9DAAA0]">
+              <div className="p-4 bg-emerald-50/70 dark:bg-emerald-950/40 border border-emerald-200/60 dark:border-emerald-800/60 rounded-2xl space-y-2 text-emerald-950 dark:text-emerald-200">
+                <div className="flex items-center gap-2 font-bold text-sm">
+                  <Shield className="w-4 h-4 text-emerald-600" />
+                  <span>End-to-End Cryptographic Architecture</span>
+                </div>
+                <p>
+                  Every private chat message is encrypted in your browser using AES-GCM-256 and ECDH keys before transmission. NoteCircle servers only ever store encrypted ciphertext.
                 </p>
               </div>
 
-              <div className="space-y-2">
-                <h5 className="font-bold text-stone-900 dark:text-stone-100">Safety Features Built Into NoteCircle:</h5>
-                <ul className="list-disc pl-5 space-y-1 text-stone-600 dark:text-stone-400">
-                  <li><strong>Account Privacy</strong>: Every account is strictly private. Nobody can follow you without explicit approval.</li>
-                  <li><strong>Immediate Blocking</strong>: Block any user to instantly sever connections, prevent messaging, and hide notes in both directions.</li>
-                  <li><strong>Reporting Workflow</strong>: Report inappropriate notes, abusive chats, or impersonating accounts directly to Trust & Safety.</li>
-                  <li><strong>Strict Do Not Disturb</strong>: Guard your quiet hours or family time from incoming messages.</li>
-                </ul>
+              <div className="p-4 rounded-2xl border border-black/[0.06] dark:border-white/[0.08] bg-[#FAF8F5] dark:bg-[#1E2421] space-y-1.5">
+                <h4 className="font-semibold text-[#191D1A] dark:text-[#F5F7F5]">Local-First Device Persistence</h4>
+                <p>
+                  Your drafts and device credentials reside securely in local IndexedDB. Production data syncs safely across devices via real server database persistence.
+                </p>
+              </div>
+
+              <div className="p-4 rounded-2xl border border-black/[0.06] dark:border-white/[0.08] bg-[#FAF8F5] dark:bg-[#1E2421] space-y-1.5">
+                <h4 className="font-semibold text-[#191D1A] dark:text-[#F5F7F5]">Zero Public Feeds & Algorithmic Tracking</h4>
+                <p>
+                  No global discovery, no follower counts displayed to strangers, no vanity metrics. Your temporary notes exist solely for your approved circle.
+                </p>
               </div>
             </div>
           )}
 
           {activeTab === 'policies' && policies && (
-            <div className="space-y-4 text-xs text-stone-700 dark:text-stone-300">
-              <div className="p-4 bg-white dark:bg-stone-850 border border-stone-200/80 dark:border-stone-800 rounded-2xl space-y-2 shadow-xs">
-                <h4 className="font-bold text-stone-900 dark:text-stone-100 text-sm flex items-center gap-1.5">
-                  <FileText className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-                  <span>Local-First Privacy Architecture</span>
-                </h4>
-                <p className="whitespace-pre-wrap text-stone-600 dark:text-stone-400 leading-relaxed font-mono text-[11px] bg-stone-50 dark:bg-stone-900 p-3 rounded-xl border border-stone-100 dark:border-stone-800">
-                  {policies.privacyPolicy}
-                </p>
+            <div className="space-y-4 text-xs">
+              <div className="p-4 rounded-2xl border border-black/[0.06] dark:border-white/[0.08] bg-[#FAF8F5] dark:bg-[#1E2421] space-y-1">
+                <h4 className="font-semibold text-[#191D1A] dark:text-[#F5F7F5]">Terms of Service</h4>
+                <p className="text-[#58635C] dark:text-[#9DAAA0] whitespace-pre-line leading-relaxed">{policies.terms}</p>
               </div>
-
-              <div className="p-4 bg-white dark:bg-stone-850 border border-stone-200/80 dark:border-stone-800 rounded-2xl space-y-2 shadow-xs">
-                <h4 className="font-bold text-stone-900 dark:text-stone-100 text-sm">Terms of Service</h4>
-                <p className="whitespace-pre-wrap text-stone-600 dark:text-stone-400 leading-relaxed text-[11px]">
-                  {policies.terms}
-                </p>
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'recovery' && (
-            <div className="space-y-3.5 text-xs text-stone-700 dark:text-stone-300">
-              <div className="p-4 bg-amber-50/80 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 rounded-2xl space-y-1">
-                <h4 className="font-bold text-amber-950 dark:text-amber-200 text-sm">Account Recovery & Troubleshooting Guide</h4>
-                <p className="text-amber-900 dark:text-amber-300 leading-relaxed text-[11px]">
-                  NoteCircle uses local-first client storage and zero plaintext backend architecture. Follow these standard troubleshooting procedures for account and device issues:
-                </p>
-              </div>
-
-              <div className="space-y-2.5">
-                <div className="p-3.5 bg-white dark:bg-stone-850 border border-stone-200/80 dark:border-stone-800 rounded-xl space-y-1">
-                  <h5 className="font-bold text-stone-900 dark:text-stone-100">1. Forgot Password</h5>
-                  <p className="text-stone-600 dark:text-stone-400 text-[11px] leading-relaxed">
-                    You can reset your account password in Settings &gt; Account using your registered email or phone verification OTP code.
-                  </p>
-                </div>
-
-                <div className="p-3.5 bg-white dark:bg-stone-850 border border-stone-200/80 dark:border-stone-800 rounded-xl space-y-1">
-                  <h5 className="font-bold text-stone-900 dark:text-stone-100">2. Local Device Storage & Cache Issues</h5>
-                  <p className="text-stone-600 dark:text-stone-400 text-[11px] leading-relaxed">
-                    If messages or drafts appear out of sync after a connection drop, go to Settings &gt; Data &gt; "Clear Local Device Cache" or toggle your network status to trigger an offline-first re-synchronization.
-                  </p>
-                </div>
-
-                <div className="p-3.5 bg-white dark:bg-stone-850 border border-stone-200/80 dark:border-stone-800 rounded-xl space-y-1">
-                  <h5 className="font-bold text-stone-900 dark:text-stone-100">3. End-to-End Encryption Keys</h5>
-                  <p className="text-stone-600 dark:text-stone-400 text-[11px] leading-relaxed">
-                    Device keys are generated on your physical device using standard Web Crypto API (ECDH / AES-GCM 256). They never touch the server. If switching browsers, simply log in to initialize your local session key.
-                  </p>
-                </div>
-
-                <div className="p-3.5 bg-white dark:bg-stone-850 border border-stone-200/80 dark:border-stone-800 rounded-xl space-y-1">
-                  <h5 className="font-bold text-stone-900 dark:text-stone-100">4. Found a Bug or Unexpected Behavior?</h5>
-                  <p className="text-stone-600 dark:text-stone-400 text-[11px] leading-relaxed mb-2">
-                    Submit a bug report with optional screenshot and automatic browser diagnostics directly to our engineering team.
-                  </p>
-                  {onOpenBugReport && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        onClose();
-                        onOpenBugReport();
-                      }}
-                      className="px-3 py-1.5 bg-amber-600 text-white rounded-xl text-xs font-semibold hover:bg-amber-700 transition-colors"
-                    >
-                      Report a Problem / Bug
-                    </button>
-                  )}
-                </div>
+              <div className="p-4 rounded-2xl border border-black/[0.06] dark:border-white/[0.08] bg-[#FAF8F5] dark:bg-[#1E2421] space-y-1">
+                <h4 className="font-semibold text-[#191D1A] dark:text-[#F5F7F5]">Privacy Policy</h4>
+                <p className="text-[#58635C] dark:text-[#9DAAA0] whitespace-pre-line leading-relaxed">{policies.privacyPolicy}</p>
               </div>
             </div>
           )}
@@ -239,44 +176,60 @@ export const SupportModal: React.FC<SupportModalProps> = ({ isOpen, onClose, onO
           {activeTab === 'contact' && (
             <form onSubmit={handleSendTicket} className="space-y-3.5">
               {ticketSent && (
-                <div className="p-3 bg-amber-200 dark:bg-amber-950/60 text-stone-950 dark:text-amber-200 text-xs font-black rounded-xl border-2 border-stone-900 flex items-center gap-2 shadow-[2px_2px_0px_#121217]">
-                  <CheckCircle className="w-4 h-4 stroke-[3] text-stone-950 shrink-0" />
-                  <span>Your support ticket was submitted. Our team will review your inquiry.</span>
+                <div className="p-3 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 text-xs rounded-2xl border border-emerald-200 dark:border-emerald-800 flex items-center gap-2">
+                  <CheckCircle className="w-4 h-4 text-emerald-600" />
+                  <span>Support request received! Our team will respond shortly.</span>
                 </div>
               )}
 
               <div>
-                <label className="text-xs font-black uppercase tracking-wider text-stone-700 dark:text-stone-300 block mb-1">Subject</label>
+                <label className="text-xs font-semibold text-[#191D1A] dark:text-[#F5F7F5] block mb-1">
+                  Subject
+                </label>
                 <input
                   type="text"
                   value={ticketSubject}
                   onChange={(e) => setTicketSubject(e.target.value)}
-                  placeholder="e.g. Question about account recovery or note expiration"
-                  className="w-full text-xs font-bold p-3 neo-input text-stone-900 dark:text-stone-100"
+                  placeholder="e.g. Question about key backup"
+                  className="w-full text-xs sm:text-sm p-3 florum-input font-medium"
                   required
                 />
               </div>
 
               <div>
-                <label className="text-xs font-black uppercase tracking-wider text-stone-700 dark:text-stone-300 block mb-1">Message</label>
+                <label className="text-xs font-semibold text-[#191D1A] dark:text-[#F5F7F5] block mb-1">
+                  Message
+                </label>
                 <textarea
                   value={ticketMessage}
                   onChange={(e) => setTicketMessage(e.target.value)}
                   rows={4}
-                  placeholder="Describe your inquiry or request in detail..."
-                  className="w-full text-xs font-bold p-3 neo-input text-stone-900 dark:text-stone-100 resize-none"
+                  placeholder="How can our security and support team help you?"
+                  className="w-full text-xs sm:text-sm p-3 florum-input font-medium resize-none"
                   required
                 />
               </div>
 
-              <div className="flex justify-end pt-2 border-t-2 border-stone-900 dark:border-stone-800">
+              <div className="flex items-center justify-between pt-2">
+                {onOpenBugReport && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onClose();
+                      onOpenBugReport();
+                    }}
+                    className="text-xs text-emerald-700 dark:text-emerald-400 hover:underline font-semibold cursor-pointer"
+                  >
+                    Report a technical bug instead →
+                  </button>
+                )}
                 <button
                   type="submit"
-                  disabled={isSubmitting || !ticketSubject.trim() || !ticketMessage.trim()}
-                  className="px-5 py-2.5 neo-btn-primary disabled:opacity-50 text-stone-950 rounded-xl text-xs font-black flex items-center gap-1.5 cursor-pointer"
+                  disabled={isSubmitting}
+                  className="florum-btn-primary text-xs py-2.5 px-5 font-semibold flex items-center gap-1.5 cursor-pointer shadow-sm ml-auto"
                 >
-                  <Send className="w-3.5 h-3.5 stroke-[2.5]" />
-                  <span>{isSubmitting ? 'Submitting...' : 'Send to Support'}</span>
+                  <Send className="w-3.5 h-3.5" />
+                  <span>{isSubmitting ? 'Sending...' : 'Send Message'}</span>
                 </button>
               </div>
             </form>

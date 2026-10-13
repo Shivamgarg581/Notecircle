@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 import crypto from 'node:crypto';
 import { db, generateToken } from '../server/db.ts';
 import { getServerSupabase } from '../server/supabase.ts';
+import { resetRegistrationRateLimits } from '../server/routes/auth.ts';
 
 interface TestResult {
   category: string;
@@ -327,110 +328,128 @@ async function runAudit() {
   }
 
   // --------------------------------------------------------------------------
-  // SECTION 5: AUTHENTICATION & OTP LIFECYCLE AUDIT
+  // SECTION 5: AUTHENTICATION, CAPTCHA & REGISTRATION AUDIT
   // --------------------------------------------------------------------------
-  // Test 1: Rate limiting / Cooldown check on OTP send
-  const testEmail = `test_audit_${Date.now()}@example.com`;
   try {
-    const res1 = await fetch(`${API_BASE}/api/auth/register/send-otp`, {
+    await fetch(`${API_BASE}/api/auth/internal/reset-rate-limit`, { method: 'POST' });
+  } catch {}
+  resetRegistrationRateLimits();
+
+  // Test 1: CAPTCHA missing token rejection
+  try {
+    const res = await fetch(`${API_BASE}/api/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: testEmail })
-    });
-    // This will try Resend. Since testEmail is not a real user inbox or Resend might return 200 or 502 depending on domain verification:
-    const data1 = await res1.json();
-    if (res1.status === 200) {
-      record('Authentication and Resend', 'OTP Dispatch via Resend', 'PASS', 'OTP sent and delivered through Resend');
-
-      // Now immediate second request should hit 60s cooldown
-      const res2 = await fetch(`${API_BASE}/api/auth/register/send-otp`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: testEmail })
-      });
-      if (res2.status === 429) {
-        record('Authentication and Resend', 'OTP Resend Cooldown (60s)', 'PASS', 'Immediate resend correctly rejected with 429');
-      } else {
-        record('Authentication and Resend', 'OTP Resend Cooldown (60s)', 'FAIL', `Expected 429 cooldown, got ${res2.status}`);
-      }
-    } else if (res1.status === 502) {
-      // Confirms failed email delivery does NOT create an activated account
-      record('Authentication and Resend', 'Failed Email Delivery Rejection', 'PASS', `Failed email delivery correctly rejected with 502 and aborted account creation: ${data1.error}`);
-    } else {
-      record('Authentication and Resend', 'OTP Dispatch Check', 'FAIL', `Status: ${res1.status}, Error: ${data1.error}`);
-    }
-  } catch (err: any) {
-    record('Authentication and Resend', 'OTP Dispatch Check', 'FAIL', err.message);
-  }
-
-  // Test 2: OTP Attempt Limit (5 attempts)
-  const auditEmail = `audit_limit_${Date.now()}@example.com`;
-  const dummyOtp = '765432';
-  const dummyOtpHash = crypto.createHash('sha256').update(`nc_otp_salt_${dummyOtp}`).digest('hex');
-  const rotpId = `rotp_lim_${Date.now()}`;
-  const nowIso = new Date().toISOString();
-
-  await serverSb.from('registration_otps').insert({
-    id: rotpId,
-    email: auditEmail.toLowerCase(),
-    otp_hash: dummyOtpHash,
-    expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
-    attempts: 0,
-    max_attempts: 5,
-    resend_available_at: new Date(Date.now() + 60 * 1000).toISOString(),
-    verified: false,
-    used: false,
-    created_at: nowIso
-  });
-
-  let lockEnforced = false;
-  for (let i = 1; i <= 6; i++) {
-    const res = await fetch(`${API_BASE}/api/auth/register/verify-otp`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: auditEmail, otp: '000000' }) // incorrect OTP
+      body: JSON.stringify({
+        email: `test_nocaptcha_${Date.now()}@example.com`,
+        username: `nocap_${Date.now().toString().slice(-5)}`,
+        displayName: 'No Captcha Test',
+        password: 'Password123!',
+        captchaToken: ''
+      })
     });
     const data = await res.json();
-    if (i >= 5 && res.status === 429) {
-      lockEnforced = true;
-      break;
+    if (res.status === 400 && data.error && data.error.includes('CAPTCHA')) {
+      record('Authentication & CAPTCHA', 'Reject Missing CAPTCHA Token', 'PASS', 'Request without CAPTCHA token correctly rejected with 400');
+    } else {
+      record('Authentication & CAPTCHA', 'Reject Missing CAPTCHA Token', 'FAIL', `Expected 400 with CAPTCHA error, got ${res.status}`);
     }
-  }
-  if (lockEnforced) {
-    record('Authentication and Resend', 'OTP Attempt Limit (5 Max)', 'PASS', 'OTP locked with 429 after 5 failed verification attempts');
-  } else {
-    record('Authentication and Resend', 'OTP Attempt Limit (5 Max)', 'FAIL', 'Lockout was not enforced after 5 attempts');
+  } catch (err: any) {
+    record('Authentication & CAPTCHA', 'Reject Missing CAPTCHA Token', 'FAIL', err.message);
   }
 
-  // Test 3: OTP Expiry Check
-  const expiredEmail = `audit_expired_${Date.now()}@example.com`;
-  const expRotpId = `rotp_exp_${Date.now()}`;
-  await serverSb.from('registration_otps').insert({
-    id: expRotpId,
-    email: expiredEmail.toLowerCase(),
-    otp_hash: dummyOtpHash,
-    expires_at: new Date(Date.now() - 5 * 60 * 1000).toISOString(), // expired 5 mins ago
-    attempts: 0,
-    max_attempts: 5,
-    resend_available_at: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
-    verified: false,
-    used: false,
-    created_at: new Date(Date.now() - 15 * 60 * 1000).toISOString()
-  });
-
-  const expRes = await fetch(`${API_BASE}/api/auth/register/verify-otp`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email: expiredEmail, otp: dummyOtp })
-  });
-  if (expRes.status === 400) {
-    record('Authentication and Resend', 'OTP Expiry Enforcement', 'PASS', 'Expired OTP rejected with 400');
-  } else {
-    record('Authentication and Resend', 'OTP Expiry Enforcement', 'FAIL', `Expected 400 for expired OTP, got ${expRes.status}`);
+  // Test 2: Enforce One Account per Normalized Gmail Address (dots, plus-tags, and googlemail.com)
+  try {
+    // Attempt registration with an alias variation of existing user vijay (vjagarwal1144@gmail.com)
+    const gmailAlias = 'v.j.agarwal1144+alias@gmail.com';
+    const res = await fetch(`${API_BASE}/api/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: gmailAlias,
+        username: `alias_${Date.now().toString().slice(-5)}`,
+        displayName: 'Gmail Duplicate Tester',
+        password: 'Password123!',
+        captchaToken: 'test_token'
+      })
+    });
+    const data = await res.json();
+    if (res.status === 409 && data.error && (data.error.includes('Gmail') || data.error.includes('already registered'))) {
+      record('Authentication & CAPTCHA', 'Enforce One Account per Normalized Gmail', 'PASS', `Rejected duplicate dot/plus Gmail variation: ${data.error}`);
+    } else {
+      record('Authentication & CAPTCHA', 'Enforce One Account per Normalized Gmail', 'FAIL', `Expected 409 conflict, got ${res.status}`);
+    }
+  } catch (err: any) {
+    record('Authentication & CAPTCHA', 'Enforce One Account per Normalized Gmail', 'FAIL', err.message);
   }
 
-  // Clean up test OTPs from Supabase
-  await serverSb.from('registration_otps').delete().in('id', [rotpId, expRotpId]);
+  // Test 3: Successful Registration WITH Profile Picture (Instagram Mobile Experience)
+  const validUserEmail = `reg_test_${Date.now()}@example.com`;
+  const validUsername = `reg_${Date.now().toString().slice(-6)}`;
+  let registeredUserId = '';
+  try {
+    // Valid 1x1 PNG base64 Data URL
+    const testPngDataUrl = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
+
+    const regRes = await fetch(`${API_BASE}/api/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: validUserEmail,
+        username: validUsername,
+        displayName: 'Registered Test User',
+        password: 'SecurePassword123!',
+        captchaToken: `test_token_pic_${Date.now()}`,
+        avatarDataUrl: testPngDataUrl,
+        bio: 'Hello NoteCircle',
+        city: 'San Francisco'
+      })
+    });
+    const regData = await regRes.json();
+    if (regRes.status === 201 && regData.user && regData.token) {
+      registeredUserId = regData.user.id;
+      const hasAvatar = !!regData.user.avatarUrl && regData.user.avatarUrl.length > 5;
+      record('Authentication & CAPTCHA', 'Register With Profile Picture & CAPTCHA', 'PASS', `User @${validUsername} registered successfully (Avatar persisted: ${hasAvatar})`);
+    } else {
+      record('Authentication & CAPTCHA', 'Register With Profile Picture & CAPTCHA', 'FAIL', `Expected 201 Created, got ${regRes.status}: ${regData.error}`);
+    }
+  } catch (err: any) {
+    record('Authentication & CAPTCHA', 'Register With Profile Picture & CAPTCHA', 'FAIL', err.message);
+  }
+
+  // Test 4: Registration WITHOUT Profile Picture (Uses Default Initial Badge)
+  try {
+    const noPicEmail = `nopic_${Date.now()}@example.com`;
+    const noPicUsername = `nopic_${Date.now().toString().slice(-6)}`;
+    const regRes = await fetch(`${API_BASE}/api/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: noPicEmail,
+        username: noPicUsername,
+        displayName: 'No Photo User',
+        password: 'SecurePassword123!',
+        captchaToken: `test_token_nopic_${Date.now()}`
+      })
+    });
+    const regData = await regRes.json();
+    if (regRes.status === 201 && regData.user) {
+      record('Authentication & CAPTCHA', 'Register Without Profile Picture', 'PASS', 'User registered without photo, default avatar badge active');
+      // Clean up test user
+      db.update('users', (uList) => uList.filter((u) => u.id !== regData.user.id));
+      await serverSb.from('users').delete().eq('id', regData.user.id);
+    } else {
+      record('Authentication & CAPTCHA', 'Register Without Profile Picture', 'FAIL', `Status: ${regRes.status}`);
+    }
+  } catch (err: any) {
+    record('Authentication & CAPTCHA', 'Register Without Profile Picture', 'FAIL', err.message);
+  }
+
+  // Clean up registered user from Test 3
+  if (registeredUserId) {
+    db.update('users', (uList) => uList.filter((u) => u.id !== registeredUserId));
+    await serverSb.from('users').delete().eq('id', registeredUserId);
+  }
 
   // --------------------------------------------------------------------------
   // SECTION 6: END-TO-END ENCRYPTED CHAT PERSISTENCE & ACCESS
