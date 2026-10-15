@@ -8,10 +8,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -22,139 +20,169 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import app.notecircle.data.model.NoteDto
-import app.notecircle.data.model.NoteReactionDto
-import app.notecircle.ui.theme.AmberPrimary
 import app.notecircle.ui.theme.NoteCircleTheme
 
-private val Ink = Color(0xFF211D1A)
-private val Muted = Color(0xFF827970)
-private val Canvas = Color(0xFFFAF7F2)
-private val SoftAmber = Color(0xFFFFE8C2)
-private val Lilac = Color(0xFFEDE7FF)
-private val Mint = Color(0xFFDDF5E8)
+private val Paper = Color(0xFFFAF7EF)
+private val Yellow = Color(0xFFFFC900)
+private val Black = Color(0xFF111111)
+private val Muted = Color(0xFF77766F)
+private val Coral = Color(0xFFFF866F)
+private val Blue = Color(0xFF7CC4F7)
+private val Green = Color(0xFF70D4A0)
 
-private data class DemoChat(val name: String, val handle: String, val message: String, val time: String, val emoji: String, val unread: Int = 0)
-private data class DemoPerson(val name: String, val handle: String, val emoji: String, val status: String)
+private data class CircleNote(
+    val id: Int,
+    val name: String,
+    val handle: String,
+    val initials: String,
+    val color: Color,
+    val message: String,
+    val tag: String,
+    val hours: Int,
+    val reactions: Int = 2,
+    val replies: Int = 1
+)
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
             NoteCircleTheme(darkTheme = false) {
-                NoteCircleApp()
+                NoteCircleHome()
             }
         }
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun NoteCircleApp() {
-    var selectedTab by remember { mutableIntStateOf(0) }
+private fun NoteCircleHome() {
+    var darkMode by remember { mutableStateOf(false) }
+    var available by remember { mutableStateOf(true) }
     var showComposer by remember { mutableStateOf(false) }
-    var noteText by remember { mutableStateOf("") }
-    var noteEmoji by remember { mutableStateOf("✨") }
-    var selectedCategory by remember { mutableStateOf("Life") }
-    var closeFriendsOnly by remember { mutableStateOf(false) }
-    var searchText by remember { mutableStateOf("") }
-    val notes = remember { mutableStateListOf(
-        NoteDto("demo-1", "u1", "aanya.mehta", "Aanya Mehta", null, "☕", "life", "Life lately", "Slow mornings, good coffee, and finally making time for myself.", "connections", reactions = listOf(NoteReactionDto("u2", "rohan", "❤️", "now")), createdAt = "Just now"),
-        NoteDto("demo-2", "u2", "rohan.shah", "Rohan Shah", null, "🎧", "music", "Currently listening", "A playlist for the long way home. Any song recommendations?", "connections", createdAt = "12 min ago"),
-        NoteDto("demo-3", "u3", "meera.k", "Meera Kapoor", null, "🌿", "wellbeing", "Taking it slow", "Reminder to drink water, step outside, and be a little kinder to yourself today.", "close_friends", createdAt = "34 min ago")
-    ) }
-    val people = listOf(
-        DemoPerson("Aanya", "@aanya.mehta", "🌼", "At a café"),
-        DemoPerson("Rohan", "@rohan.shah", "🎧", "Listening to music"),
-        DemoPerson("Meera", "@meera.k", "🌿", "Taking it slow"),
-        DemoPerson("Kabir", "@kabir.s", "🏏", "Out with friends"),
-        DemoPerson("Isha", "@isha.art", "🎨", "Creating")
-    )
-    val chats = listOf(
-        DemoChat("Aanya Mehta", "@aanya.mehta", "That café looks lovely ☕", "2m", "🌼", 2),
-        DemoChat("Rohan Shah", "@rohan.shah", "Send me that playlist!", "18m", "🎧", 1),
-        DemoChat("Close Friends", "3 members", "Meera: Sunday plans? 🌿", "1h", "🫶"),
-        DemoChat("Isha Verma", "@isha.art", "Thank you!! 🎨", "Yesterday", "🎨")
-    )
+    var showNotice by remember { mutableStateOf(false) }
+    var showArchive by remember { mutableStateOf(false) }
+    var selectedFilter by remember { mutableStateOf("All") }
+    var selectedNav by remember { mutableIntStateOf(0) }
+    var newText by remember { mutableStateOf("") }
+    var newTag by remember { mutableStateOf("LIFE") }
+    var nextId by remember { mutableIntStateOf(10) }
+    val notes = remember {
+        mutableStateListOf(
+            CircleNote(1, "Maya Chen", "@maya", "MC", Coral, "Tokyo layover is looking like a 3 hour wait. Send me podcast recs, circle! 🎧", "✈️ TRAVEL", 4, 2, 1),
+            CircleNote(2, "Aisha Patel", "@aisha", "AP", Blue, "Who's around for a 4pm coffee run? First one to reply picks the place ☕", "☕ BREAK", 1, 4, 2),
+            CircleNote(3, "Zoe Kim", "@zoe", "ZK", Green, "Tiny win today: finally finished the thing I've been putting off 🌱", "🌱 LIFE", 8, 5, 0),
+            CircleNote(4, "You", "@you", "S", Yellow, "A little reminder to take a breath and be kind to yourself.", "💛 THOUGHT", 12, 1, 0),
+            CircleNote(5, "Maya Chen", "@maya", "MC", Coral, "Sunday playlist exchange? Drop your current favourite below 🎶", "🎧 MUSIC", 2, 3, 1)
+        )
+    }
+    val bg = if (darkMode) Color(0xFF171613) else Paper
+    val fg = if (darkMode) Color(0xFFF8F5ED) else Black
+    val card = if (darkMode) Color(0xFF25231F) else Color.White
 
-    Scaffold(
-        containerColor = Canvas,
-        topBar = {
-            if (selectedTab != 4) {
-                TopAppBar(
-                    title = {
-                        Column {
-                            Text("NoteCircle", color = Ink, fontWeight = FontWeight.ExtraBold, fontSize = 22.sp, letterSpacing = (-0.6).sp)
-                            Text(
-                                when (selectedTab) {
-                                    0 -> "YOUR PEOPLE, YOUR MOMENT"
-                                    1 -> "FIND YOUR KIND OF PEOPLE"
-                                    2 -> "PRIVATE CONVERSATIONS"
-                                    else -> "LITTLE MOMENTS, KEPT"
-                                },
-                                color = Muted, fontSize = 9.sp, letterSpacing = 1.5.sp, fontWeight = FontWeight.Bold
-                            )
-                        }
-                    },
-                    actions = {
-                        Surface(
-                            color = Color.White,
-                            shape = CircleShape,
-                            modifier = Modifier.padding(end = 14.dp).size(40.dp).clickable { selectedTab = 4 }
+    MaterialTheme(colorScheme = if (darkMode) darkColorScheme(primary = Yellow, background = bg, surface = card, onSurface = fg) else lightColorScheme(primary = Yellow, background = bg, surface = card, onSurface = fg)) {
+        Scaffold(
+            containerColor = bg,
+            bottomBar = {
+                Row(
+                    Modifier.fillMaxWidth().background(card).padding(top = 10.dp, bottom = 12.dp, start = 8.dp, end = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceAround,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    val navs = listOf("⌂" to "Home", "☷" to "Notes", "▤" to "Chat", "♧" to "Circle", "♙" to "Profile")
+                    navs.forEachIndexed { index, pair ->
+                        Column(
+                            modifier = Modifier.weight(1f).clip(RoundedCornerShape(14.dp)).clickable { selectedNav = index; if (index == 1) selectedFilter = "Notes"; if (index == 2) selectedFilter = "Chat"; if (index == 3) selectedFilter = "All"; if (index == 4) showNotice = true }.padding(vertical = 3.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            Box(contentAlignment = Alignment.Center) { Text("🧑🏻", fontSize = 22.sp) }
+                            Text(pair.first, fontSize = 26.sp, color = if (selectedNav == index) Black else Muted, fontWeight = FontWeight.Bold)
+                            if (selectedNav == index) Box(Modifier.padding(top = 2.dp).size(6.dp).clip(CircleShape).background(Yellow))
                         }
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(containerColor = Canvas)
-                )
-            }
-        },
-        bottomBar = {
-            NavigationBar(containerColor = Color.White, tonalElevation = 4.dp) {
-                val tabs = listOf("Circle", "Discover", "Chats", "History", "Profile")
-                val icons = listOf("⌂", "⌕", "✉", "◷", "●")
-                tabs.forEachIndexed { index, label ->
-                    NavigationBarItem(
-                        selected = selectedTab == index,
-                        onClick = { selectedTab = index },
-                        icon = {
-                            Box(contentAlignment = Alignment.Center) {
-                                Text(icons[index], fontSize = 21.sp, fontWeight = FontWeight.Bold)
-                                if (index == 2) Box(Modifier.align(Alignment.TopEnd).padding(top = 1.dp, end = 1.dp).size(7.dp).clip(CircleShape).background(AmberPrimary))
-                            }
-                        },
-                        label = { Text(label, fontSize = 10.sp, fontWeight = if (selectedTab == index) FontWeight.Bold else FontWeight.Medium) },
-                        colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = AmberPrimary,
-                            selectedTextColor = AmberPrimary,
-                            indicatorColor = SoftAmber,
-                            unselectedIconColor = Muted,
-                            unselectedTextColor = Muted
-                        )
-                    )
+                    }
                 }
             }
-        },
-        floatingActionButton = {
-            if (selectedTab == 0 || selectedTab == 3) {
-                ExtendedFloatingActionButton(
-                    onClick = { showComposer = true },
-                    containerColor = Ink,
-                    contentColor = Color.White,
-                    shape = RoundedCornerShape(18.dp),
-                    icon = { Text("+", fontSize = 23.sp, fontWeight = FontWeight.Normal) },
-                    text = { Text("New note", fontWeight = FontWeight.Bold) }
-                )
-            }
-        }
-    ) { padding ->
-        Box(Modifier.fillMaxSize().padding(padding)) {
-            when (selectedTab) {
-                0 -> CircleScreen(notes, people, onCompose = { showComposer = true }, onDiscover = { selectedTab = 1 })
-                1 -> DiscoverScreen(people, searchText, { searchText = it })
-                2 -> ChatsScreen(chats)
-                3 -> HistoryScreen(notes)
-                else -> ProfileScreen(notes.size)
+        ) { padding ->
+            LazyColumn(
+                modifier = Modifier.fillMaxSize().padding(padding),
+                contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 20.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                item {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
+                        Column {
+                            Text("NoteCircle", color = fg, fontSize = 27.sp, fontWeight = FontWeight.Black, letterSpacing = (-1.1).sp)
+                            Text("P R I V A T E  N O T E B O O K", color = fg, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.2.sp)
+                        }
+                        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                            RoundAction(if (darkMode) "☀" else "☾", fg, card) { darkMode = !darkMode }
+                            RoundAction("♧", fg, card) { showNotice = true }
+                        }
+                    }
+                }
+                item {
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Surface(color = Yellow, shape = RoundedCornerShape(20.dp), border = androidx.compose.foundation.BorderStroke(2.dp, Black)) {
+                            Text("THU OCT 15", color = Black, fontSize = 11.sp, fontWeight = FontWeight.Black, modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp))
+                        }
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
+                            Text("Good morning, Shivam", color = fg, fontSize = 25.sp, lineHeight = 29.sp, fontWeight = FontWeight.Black, modifier = Modifier.weight(1f))
+                            Surface(color = card, shape = RoundedCornerShape(14.dp), border = androidx.compose.foundation.BorderStroke(2.dp, Black), modifier = Modifier.clickable { available = !available }) {
+                                Text(if (available) "✅ Available" else "⛔ Away", color = fg, fontWeight = FontWeight.Bold, fontSize = 12.sp, modifier = Modifier.padding(horizontal = 9.dp, vertical = 10.dp))
+                            }
+                        }
+                    }
+                }
+                item {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
+                        Text("CIRCLE ONLINE", color = fg, fontWeight = FontWeight.Black, fontSize = 15.sp, letterSpacing = 1.2.sp)
+                        Text("3 active", color = fg, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                    }
+                    Row(Modifier.fillMaxWidth().padding(top = 12.dp), horizontalArrangement = Arrangement.spacedBy(22.dp)) {
+                        OnlineAvatar("MC", "Maya", Coral)
+                        OnlineAvatar("AP", "Aisha", Blue)
+                        OnlineAvatar("ZK", "Zoe", Green)
+                    }
+                }
+                item {
+                    Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(30.dp)).background(if (darkMode) Color(0xFF34312A) else Color(0xFFF2EEE5)).padding(4.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+                        listOf("All", "Notes", "Chat", "Plans").forEach { label ->
+                            Box(Modifier.weight(1f).clip(RoundedCornerShape(25.dp)).background(if (selectedFilter == label) Yellow else Color.Transparent).clickable { selectedFilter = label }.padding(vertical = 10.dp), contentAlignment = Alignment.Center) {
+                                Text(when(label) { "Notes" -> "Notes (${notes.size})"; "Chat" -> "Chat (3)"; "Plans" -> "Plans (2)"; else -> "All" }, color = Black, fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+                            }
+                        }
+                    }
+                }
+                item {
+                    Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(26.dp)).background(Yellow).padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Surface(color = Color.White, shape = RoundedCornerShape(15.dp), border = androidx.compose.foundation.BorderStroke(2.dp, Black), modifier = Modifier.size(54.dp)) {
+                            Box(contentAlignment = Alignment.Center) { Text("✍️", fontSize = 26.sp) }
+                        }
+                        Column(Modifier.weight(1f).padding(horizontal = 12.dp)) {
+                            Text("Write a Note for Your Circle", color = Black, fontWeight = FontWeight.Black, fontSize = 13.sp)
+                            Text("Auto-expires in 24 hours · Shared with approved people only", color = Black, fontSize = 10.sp, lineHeight = 13.sp)
+                        }
+                        Surface(color = Black, shape = RoundedCornerShape(15.dp), modifier = Modifier.size(52.dp).clickable { showComposer = true }) {
+                            Box(contentAlignment = Alignment.Center) { Text("+", color = Yellow, fontSize = 30.sp, fontWeight = FontWeight.Normal) }
+                        }
+                    }
+                }
+                item {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
+                        Text(if (selectedFilter == "Chat") "CIRCLE CHAT" else if (selectedFilter == "Plans") "UPCOMING PLANS" else "CIRCLE NOTES", color = fg, fontWeight = FontWeight.Black, fontSize = 15.sp, letterSpacing = 1.sp)
+                        Text("ARCHIVE  ☷", color = fg, fontWeight = FontWeight.Bold, fontSize = 11.sp, modifier = Modifier.clickable { showArchive = true })
+                    }
+                }
+                if (selectedFilter == "Chat" || selectedFilter == "Plans") {
+                    item {
+                        NoteCircleInfoCard(if (selectedFilter == "Chat") "Your circle chats" else "Your plans", if (selectedFilter == "Chat") "Aisha: Coffee at 4? ☕\nMaya: Send me your playlist 🎧\nZoe: Sunday walk? 🌱" else "☕ Coffee run · Today, 4:00 PM\n🌿 Sunday walk · Sunday, 10:00 AM", fg, card)
+                    }
+                } else {
+                    items(notes.filter { selectedFilter == "All" || selectedFilter == "Notes" }) { note ->
+                        NoteCard(note, card, fg, onReact = {
+                            val idx = notes.indexOfFirst { it.id == note.id }
+                            if (idx >= 0) notes[idx] = notes[idx].copy(reactions = notes[idx].reactions + 1)
+                        }, onReply = { showNotice = true })
+                    }
+                }
             }
         }
     }
@@ -162,236 +190,86 @@ private fun NoteCircleApp() {
     if (showComposer) {
         AlertDialog(
             onDismissRequest = { showComposer = false },
-            containerColor = Color.White,
-            shape = RoundedCornerShape(28.dp),
-            title = {
-                Column {
-                    Text("Share a little moment", fontWeight = FontWeight.ExtraBold, color = Ink)
-                    Text("Your circle is listening.", color = Muted, fontSize = 12.sp)
-                }
-            },
+            containerColor = Paper,
+            title = { Text("Write a note ✍️", color = Black, fontWeight = FontWeight.Black) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        listOf("✨", "☕", "🎧", "🌿", "😊", "🔥").forEach { emoji ->
-                            Surface(
-                                color = if (noteEmoji == emoji) SoftAmber else Canvas,
-                                shape = RoundedCornerShape(12.dp),
-                                modifier = Modifier.size(38.dp).clickable { noteEmoji = emoji }
-                            ) { Box(contentAlignment = Alignment.Center) { Text(emoji, fontSize = 19.sp) } }
-                        }
-                    }
-                    OutlinedTextField(
-                        value = noteText,
-                        onValueChange = { if (it.length <= 180) noteText = it },
-                        placeholder = { Text("What’s on your mind?") },
-                        supportingText = { Text("${noteText.length}/180") },
-                        minLines = 3,
-                        shape = RoundedCornerShape(16.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    Text("CATEGORY", fontSize = 10.sp, color = Muted, fontWeight = FontWeight.Bold, letterSpacing = 1.2.sp)
+                    OutlinedTextField(value = newText, onValueChange = { newText = it }, label = { Text("What's happening?") }, placeholder = { Text("Share a little moment…") }, minLines = 3, maxLines = 5)
+                    Text("Choose a tag", fontWeight = FontWeight.Bold, color = Black)
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        listOf("Life", "Music", "Mood", "Plans").forEach { category ->
-                            FilterChip(
-                                selected = selectedCategory == category,
-                                onClick = { selectedCategory = category },
-                                label = { Text(category, fontSize = 11.sp) }
-                            )
+                        listOf("LIFE", "TRAVEL", "BREAK").forEach { tag ->
+                            FilterChip(selected = newTag == tag, onClick = { newTag = tag }, label = { Text(tag) })
                         }
                     }
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Column(Modifier.weight(1f)) {
-                            Text("Close friends only", color = Ink, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
-                            Text("Share with your inner circle", color = Muted, fontSize = 11.sp)
-                        }
-                        Switch(checked = closeFriendsOnly, onCheckedChange = { closeFriendsOnly = it })
-                    }
+                    Text("Visible to your circle · expires in 24 hours", fontSize = 11.sp, color = Muted)
                 }
             },
             confirmButton = {
-                Button(
-                    onClick = {
-                        if (noteText.isNotBlank()) {
-                            notes.add(0, NoteDto(
-                                id = "local-${System.currentTimeMillis()}",
-                                userId = "local-user",
-                                authorUsername = "you",
-                                authorDisplayName = "You",
-                                emoji = noteEmoji,
-                                category = selectedCategory.lowercase(),
-                                categoryLabel = selectedCategory,
-                                text = noteText.trim(),
-                                audience = if (closeFriendsOnly) "close_friends" else "connections",
-                                createdAt = "Just now"
-                            ))
-                            noteText = ""
-                            noteEmoji = "✨"
-                            closeFriendsOnly = false
-                            showComposer = false
-                        }
-                    },
-                    enabled = noteText.isNotBlank(),
-                    colors = ButtonDefaults.buttonColors(containerColor = Ink),
-                    shape = RoundedCornerShape(14.dp)
-                ) { Text("Share note") }
+                Button(onClick = {
+                    if (newText.isNotBlank()) {
+                        notes.add(0, CircleNote(nextId++, "Shivam", "@you", "S", Yellow, newText.trim(), "✦ $newTag", 24, 0, 0))
+                        selectedFilter = "All"
+                        newText = ""
+                        showComposer = false
+                    }
+                }, colors = ButtonDefaults.buttonColors(containerColor = Yellow, contentColor = Black)) { Text("Post note", fontWeight = FontWeight.Bold) }
             },
-            dismissButton = { TextButton(onClick = { showComposer = false }) { Text("Cancel", color = Muted) } }
+            dismissButton = { TextButton(onClick = { showComposer = false }) { Text("Cancel", color = Black) } }
         )
     }
-}
-
-@Composable
-private fun CircleScreen(notes: List<NoteDto>, people: List<DemoPerson>, onCompose: () -> Unit, onDiscover: () -> Unit) {
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(start = 18.dp, end = 18.dp, top = 8.dp, bottom = 100.dp),
-        verticalArrangement = Arrangement.spacedBy(18.dp)
-    ) {
-        item {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f)) {
-                    Text("Your circle", fontSize = 27.sp, fontWeight = FontWeight.ExtraBold, color = Ink, letterSpacing = (-0.7).sp)
-                    Text("Little updates from people who matter.", color = Muted, fontSize = 12.sp)
-                }
-                Surface(color = Mint, shape = RoundedCornerShape(14.dp)) {
-                    Text("●  All good", color = Color(0xFF27734A), fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp))
-                }
-            }
-        }
-        item {
-            Card(shape = RoundedCornerShape(24.dp), colors = CardDefaults.cardColors(containerColor = Ink), modifier = Modifier.fillMaxWidth()) {
-                Row(Modifier.fillMaxWidth().padding(18.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Column(Modifier.weight(1f)) {
-                        Text("A little check-in", color = Color(0xFFFFD9A0), fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.2.sp)
-                        Spacer(Modifier.height(6.dp))
-                        Text("How’s your day\nreally going?", color = Color.White, fontSize = 22.sp, lineHeight = 27.sp, fontWeight = FontWeight.ExtraBold)
-                        Spacer(Modifier.height(12.dp))
-                        Button(onClick = onCompose, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFD9A0), contentColor = Ink), shape = RoundedCornerShape(12.dp), contentPadding = PaddingValues(horizontal = 14.dp, vertical = 4.dp)) {
-                            Text("Post a note  ↗", fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                        }
-                    }
-                    Text("☀️", fontSize = 58.sp, modifier = Modifier.padding(start = 4.dp))
-                }
-            }
-        }
-        item {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Around your circle", color = Ink, fontSize = 17.sp, fontWeight = FontWeight.ExtraBold, modifier = Modifier.weight(1f))
-                TextButton(onClick = onDiscover) { Text("See all  →", color = AmberPrimary, fontSize = 12.sp) }
-            }
-            Spacer(Modifier.height(4.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(13.dp), modifier = Modifier.fillMaxWidth()) {
-                people.forEachIndexed { index, person ->
-                    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.weight(1f).clickable { }) {
-                        Box {
-                            Surface(
-                                color = listOf(SoftAmber, Lilac, Mint, Color(0xFFFFE4E1), Color(0xFFDDEEFF))[index],
-                                shape = CircleShape,
-                                modifier = Modifier.size(48.dp)
-                            ) { Box(contentAlignment = Alignment.Center) { Text(person.emoji, fontSize = 23.sp) } }
-                            Box(Modifier.align(Alignment.BottomEnd).size(12.dp).clip(CircleShape).background(Color(0xFF55B982)).padding(2.dp).clip(CircleShape).background(Color.White))
-                        }
-                        Spacer(Modifier.height(6.dp))
-                        Text(person.name, fontSize = 10.sp, color = Ink, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    }
-                }
-            }
-        }
-        item {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Fresh from your people", color = Ink, fontSize = 17.sp, fontWeight = FontWeight.ExtraBold, modifier = Modifier.weight(1f))
-                Surface(color = SoftAmber, shape = RoundedCornerShape(8.dp)) { Text("24H NOTES", color = Color(0xFF8B5200), fontSize = 9.sp, fontWeight = FontWeight.ExtraBold, modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp)) }
-            }
-        }
-        items(notes, key = { it.id }) { note -> NoteFeedCard(note) }
-        item {
-            Surface(color = Color.White, shape = RoundedCornerShape(18.dp), modifier = Modifier.fillMaxWidth().clickable(onClick = onDiscover)) {
-                Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Text("🫶", fontSize = 24.sp)
-                    Spacer(Modifier.width(12.dp))
-                    Column(Modifier.weight(1f)) {
-                        Text("Make your circle feel closer", fontWeight = FontWeight.Bold, color = Ink, fontSize = 13.sp)
-                        Text("Find people and invite them in.", color = Muted, fontSize = 11.sp)
-                    }
-                    Text("→", color = AmberPrimary, fontSize = 20.sp)
-                }
-            }
-        }
+    if (showNotice) {
+        AlertDialog(onDismissRequest = { showNotice = false }, containerColor = Paper, title = { Text("NoteCircle", color = Black, fontWeight = FontWeight.Black) }, text = { Text("This is a local demo right now. Real accounts, syncing, and live chat need backend setup.", color = Black) }, confirmButton = { TextButton(onClick = { showNotice = false }) { Text("OK", color = Black) } })
+    }
+    if (showArchive) {
+        AlertDialog(onDismissRequest = { showArchive = false }, containerColor = Paper, title = { Text("Circle archive", color = Black, fontWeight = FontWeight.Black) }, text = { Text("Your current notes are shown in the feed. Expired-note storage will be available after the backend is connected.", color = Black) }, confirmButton = { TextButton(onClick = { showArchive = false }) { Text("Close", color = Black) } })
     }
 }
 
 @Composable
-private fun NoteFeedCard(note: NoteDto) {
-    Card(
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        shape = RoundedCornerShape(22.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Column(Modifier.padding(16.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Surface(
-                    color = when (note.category.lowercase()) { "music" -> Lilac; "wellbeing" -> Mint; else -> SoftAmber },
-                    shape = RoundedCornerShape(15.dp),
-                    modifier = Modifier.size(44.dp)
-                ) { Box(contentAlignment = Alignment.Center) { Text(note.emoji, fontSize = 22.sp) } }
-                Spacer(Modifier.width(10.dp))
-                Column(Modifier.weight(1f)) {
-                    Text(note.authorDisplayName, color = Ink, fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                    Text("@${note.authorUsername}  ·  ${note.createdAt}", color = Muted, fontSize = 10.sp)
-                }
-                Text("•••", color = Muted, fontWeight = FontWeight.Bold)
+private fun RoundAction(label: String, fg: Color, card: Color, onClick: () -> Unit) {
+    Surface(color = card, shape = RoundedCornerShape(18.dp), border = androidx.compose.foundation.BorderStroke(2.dp, Black), modifier = Modifier.size(48.dp).clickable { onClick() }) {
+        Box(contentAlignment = Alignment.Center) { Text(label, fontSize = 23.sp, color = fg, fontWeight = FontWeight.Bold) }
+    }
+}
+
+@Composable
+private fun OnlineAvatar(initials: String, name: String, color: Color) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Box {
+            Surface(color = color, shape = CircleShape, border = androidx.compose.foundation.BorderStroke(2.dp, Black), modifier = Modifier.size(64.dp)) {
+                Box(contentAlignment = Alignment.Center) { Text(initials, color = Black, fontSize = 21.sp, fontWeight = FontWeight.Black) }
             }
-            Spacer(Modifier.height(13.dp))
-            Text(note.categoryLabel.uppercase(), color = AmberPrimary, fontSize = 9.sp, letterSpacing = 1.2.sp, fontWeight = FontWeight.ExtraBold)
-            Spacer(Modifier.height(4.dp))
-            Text(note.text, color = Ink, fontSize = 14.sp, lineHeight = 21.sp)
-            Spacer(Modifier.height(14.dp))
-            HorizontalDivider(color = Canvas)
-            Spacer(Modifier.height(10.dp))
+            Box(Modifier.align(Alignment.BottomEnd).padding(bottom = 1.dp, end = 1.dp).size(15.dp).clip(CircleShape).background(Color(0xFF37C96B)))
+        }
+        Text(name, color = Black, fontWeight = FontWeight.SemiBold, fontSize = 11.sp, modifier = Modifier.padding(top = 5.dp))
+    }
+}
+
+@Composable
+private fun NoteCard(note: CircleNote, card: Color, fg: Color, onReact: () -> Unit, onReply: () -> Unit) {
+    Column(Modifier.fillMaxWidth().padding(bottom = 2.dp).clip(RoundedCornerShape(28.dp)).background(Black).padding(end = 4.dp, bottom = 5.dp)) {
+        Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(26.dp)).background(card).padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("♡  ${note.reactions.size + 3}", color = Muted, fontSize = 11.sp)
-                Spacer(Modifier.width(18.dp))
-                Text("◯  Reply", color = Muted, fontSize = 11.sp)
+                Surface(color = note.color, shape = CircleShape, border = androidx.compose.foundation.BorderStroke(2.dp, Black), modifier = Modifier.size(48.dp)) {
+                    Box(contentAlignment = Alignment.Center) { Text(note.initials, color = Black, fontWeight = FontWeight.Black, fontSize = 16.sp) }
+                }
+                Column(Modifier.weight(1f).padding(start = 9.dp)) {
+                    Text(note.name, color = fg, fontWeight = FontWeight.Black, fontSize = 13.sp)
+                    Text("${note.handle}  ·  ◷  ${note.hours}h remaining", color = fg, fontSize = 10.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
+                Surface(color = Yellow, shape = RoundedCornerShape(9.dp), border = androidx.compose.foundation.BorderStroke(2.dp, Black)) {
+                    Text(note.tag, color = Black, fontWeight = FontWeight.Black, fontSize = 9.sp, modifier = Modifier.padding(horizontal = 7.dp, vertical = 5.dp))
+                }
+            }
+            Text(note.message, color = fg, fontSize = 16.sp, lineHeight = 23.sp, modifier = Modifier.padding(top = 16.dp, bottom = 14.dp))
+            HorizontalDivider(color = if (fg == Black) Color(0xFFE4E1DA) else Color(0xFF494640), thickness = 1.dp)
+            Row(Modifier.fillMaxWidth().padding(top = 12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+                Surface(color = Paper, shape = RoundedCornerShape(20.dp), modifier = Modifier.clickable { onReact() }) { Text("❤️ ${note.reactions}", color = Black, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 9.dp, vertical = 7.dp)) }
+                Surface(color = Paper, shape = RoundedCornerShape(20.dp), modifier = Modifier.clickable { onReact() }) { Text("☕", color = Black, fontSize = 11.sp, modifier = Modifier.padding(horizontal = 9.dp, vertical = 7.dp)) }
+                Surface(color = Yellow, shape = RoundedCornerShape(10.dp), border = androidx.compose.foundation.BorderStroke(2.dp, Black), modifier = Modifier.clickable { onReact() }) { Text("✨", color = Black, fontSize = 11.sp, modifier = Modifier.padding(horizontal = 9.dp, vertical = 6.dp)) }
                 Spacer(Modifier.weight(1f))
-                Text(if (note.audience == "close_friends") "🫶 Close friends" else "🔒 Circle only", color = Muted, fontSize = 10.sp)
-            }
-        }
-    }
-}
-
-@Composable
-private fun DiscoverScreen(people: List<DemoPerson>, searchText: String, onSearchChange: (String) -> Unit) {
-    val filtered = people.filter { it.name.contains(searchText, true) || it.handle.contains(searchText, true) }
-    Column(Modifier.fillMaxSize().padding(horizontal = 18.dp)) {
-        Spacer(Modifier.height(8.dp))
-        Text("Find your people", fontSize = 26.sp, fontWeight = FontWeight.ExtraBold, color = Ink)
-        Text("A smaller, kinder corner of the internet.", color = Muted, fontSize = 12.sp)
-        Spacer(Modifier.height(16.dp))
-        OutlinedTextField(value = searchText, onValueChange = onSearchChange, modifier = Modifier.fillMaxWidth(), placeholder = { Text("Search people or usernames") }, leadingIcon = { Text("⌕", fontSize = 22.sp) }, shape = RoundedCornerShape(16.dp), singleLine = true)
-        Spacer(Modifier.height(14.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            listOf("For you", "Nearby", "Suggested").forEachIndexed { i, s ->
-                Surface(color = if (i == 0) Ink else Color.White, shape = RoundedCornerShape(20.dp)) {
-                    Text(s, color = if (i == 0) Color.White else Muted, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(horizontal = 14.dp, vertical = 9.dp))
-                }
-            }
-        }
-        Spacer(Modifier.height(12.dp))
-        LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp), contentPadding = PaddingValues(bottom = 24.dp)) {
-            items(filtered) { person ->
-                Surface(color = Color.White, shape = RoundedCornerShape(20.dp), modifier = Modifier.fillMaxWidth()) {
-                    Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Surface(color = SoftAmber, shape = CircleShape, modifier = Modifier.size(48.dp)) { Box(contentAlignment = Alignment.Center) { Text(person.emoji, fontSize = 23.sp) } }
-                        Spacer(Modifier.width(12.dp))
-                        Column(Modifier.weight(1f)) {
-                            Text(person.name, color = Ink, fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                            Text(person.handle, color = Muted, fontSize = 11.sp)
-                            Text("●  ${person.status}", color = Color(0xFF3E8A60), fontSize = 10.sp)
-                        }
-                        Button(onClick = {}, colors = ButtonDefaults.buttonColors(containerColor = Ink), shape = RoundedCornerShape(12.dp), contentPadding = PaddingValues(horizontal = 13.dp, vertical = 3.dp)) { Text("Connect", fontSize = 11.sp) }
-                    }
+                Surface(color = Paper, shape = RoundedCornerShape(12.dp), border = androidx.compose.foundation.BorderStroke(2.dp, Black), modifier = Modifier.clickable { onReply() }) {
+                    Text("☷  ${note.replies} replies", color = Black, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 8.dp, vertical = 7.dp))
                 }
             }
         }
@@ -399,129 +277,9 @@ private fun DiscoverScreen(people: List<DemoPerson>, searchText: String, onSearc
 }
 
 @Composable
-private fun ChatsScreen(chats: List<DemoChat>) {
-    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        item {
-            Text("Your conversations", color = Ink, fontSize = 25.sp, fontWeight = FontWeight.ExtraBold)
-            Text("Private chats with your circle.", color = Muted, fontSize = 12.sp)
-            Spacer(Modifier.height(8.dp))
-            Surface(color = Mint, shape = RoundedCornerShape(14.dp), modifier = Modifier.fillMaxWidth()) {
-                Row(Modifier.padding(13.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Text("🔐", fontSize = 20.sp)
-                    Spacer(Modifier.width(10.dp))
-                    Column {
-                        Text("Your space stays yours", color = Color(0xFF245B3D), fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                        Text("Keep conversations respectful and private.", color = Color(0xFF397450), fontSize = 10.sp)
-                    }
-                }
-            }
-        }
-        item { Text("MESSAGES", color = Muted, fontSize = 10.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 1.4.sp) }
-        items(chats) { chat ->
-            Surface(color = Color.White, shape = RoundedCornerShape(20.dp), modifier = Modifier.fillMaxWidth().clickable { }) {
-                Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Surface(color = Lilac, shape = CircleShape, modifier = Modifier.size(48.dp)) { Box(contentAlignment = Alignment.Center) { Text(chat.emoji, fontSize = 22.sp) } }
-                    Spacer(Modifier.width(12.dp))
-                    Column(Modifier.weight(1f)) {
-                        Text(chat.name, color = Ink, fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                        Text(chat.message, color = Muted, fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    }
-                    Column(horizontalAlignment = Alignment.End) {
-                        Text(chat.time, color = Muted, fontSize = 9.sp)
-                        if (chat.unread > 0) Surface(color = AmberPrimary, shape = CircleShape) { Text("${chat.unread}", color = Color.White, fontSize = 9.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)) }
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun HistoryScreen(notes: List<NoteDto>) {
-    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        item {
-            Text("Your moments", color = Ink, fontSize = 26.sp, fontWeight = FontWeight.ExtraBold)
-            Text("A little history of what you shared.", color = Muted, fontSize = 12.sp)
-            Spacer(Modifier.height(8.dp))
-        }
-        item {
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                StatCard("NOTES", notes.size.toString(), SoftAmber, Modifier.weight(1f))
-                StatCard("REACTIONS", (notes.sumOf { it.reactions.size } + 3).toString(), Lilac, Modifier.weight(1f))
-                StatCard("CIRCLE", "12", Mint, Modifier.weight(1f))
-            }
-        }
-        item { Text("RECENTLY SHARED", color = Muted, fontSize = 10.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 1.4.sp) }
-        items(notes, key = { "history-${it.id}" }) { note -> NoteFeedCard(note) }
-        item {
-            Surface(color = Color.White, shape = RoundedCornerShape(20.dp), modifier = Modifier.fillMaxWidth()) {
-                Column(Modifier.padding(18.dp)) {
-                    Text("✨  Your story, your pace", color = Ink, fontWeight = FontWeight.Bold)
-                    Spacer(Modifier.height(4.dp))
-                    Text("Notes are temporary by design. Your history helps you revisit the moments you choose to keep.", color = Muted, fontSize = 11.sp, lineHeight = 17.sp)
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun StatCard(label: String, value: String, tint: Color, modifier: Modifier = Modifier) {
-    Surface(color = tint, shape = RoundedCornerShape(16.dp), modifier = modifier) {
-        Column(Modifier.padding(12.dp)) {
-            Text(value, color = Ink, fontWeight = FontWeight.ExtraBold, fontSize = 21.sp)
-            Text(label, color = Ink.copy(alpha = 0.7f), fontSize = 8.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.7.sp)
-        }
-    }
-}
-
-@Composable
-private fun ProfileScreen(noteCount: Int) {
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(18.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-        Spacer(Modifier.height(12.dp))
-        Surface(color = SoftAmber, shape = RoundedCornerShape(30.dp), modifier = Modifier.size(94.dp)) { Box(contentAlignment = Alignment.Center) { Text("🧑🏻", fontSize = 48.sp) } }
-        Spacer(Modifier.height(12.dp))
-        Text("Your profile", color = Ink, fontSize = 25.sp, fontWeight = FontWeight.ExtraBold)
-        Text("@you · Your own little corner", color = Muted, fontSize = 12.sp)
-        Spacer(Modifier.height(18.dp))
-        Surface(color = Color.White, shape = RoundedCornerShape(22.dp), modifier = Modifier.fillMaxWidth()) {
-            Row(Modifier.padding(18.dp), verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f)) {
-                    Text("Your circle, your rules", color = Ink, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                    Text("Manage your privacy and availability.", color = Muted, fontSize = 11.sp)
-                }
-                Text("🛡️", fontSize = 26.sp)
-            }
-        }
-        Spacer(Modifier.height(12.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            StatCard("NOTES SHARED", noteCount.toString(), SoftAmber, Modifier.weight(1f))
-            StatCard("FRIENDS", "12", Lilac, Modifier.weight(1f))
-            StatCard("STREAK", "4 days", Mint, Modifier.weight(1f))
-        }
-        Spacer(Modifier.height(16.dp))
-        listOf(
-            Triple("🟢", "Availability", "Let your circle know how you’re doing"),
-            Triple("👥", "Manage your circle", "Close friends and connections"),
-            Triple("🔔", "Notifications", "Choose what you hear about"),
-            Triple("🎨", "Appearance", "Theme and personalization"),
-            Triple("🔒", "Privacy & safety", "Control who can see your notes"),
-            Triple("⚙️", "Settings", "Account and app preferences")
-        ).forEach { item ->
-            Surface(color = Color.White, shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp).clickable { }) {
-                Row(Modifier.padding(15.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Text(item.first, fontSize = 22.sp)
-                    Spacer(Modifier.width(12.dp))
-                    Column(Modifier.weight(1f)) {
-                        Text(item.second, color = Ink, fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                        Text(item.third, color = Muted, fontSize = 10.sp)
-                    }
-                    Text("›", color = Muted, fontSize = 23.sp)
-                }
-            }
-        }
-        Spacer(Modifier.height(16.dp))
-        Text("NoteCircle  •  A little closer, a little safer.", color = Muted, fontSize = 10.sp)
-        Spacer(Modifier.height(16.dp))
+private fun NoteCircleInfoCard(title: String, body: String, fg: Color, card: Color) {
+    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(24.dp)).background(card).padding(18.dp)) {
+        Text(title, color = fg, fontWeight = FontWeight.Black, fontSize = 16.sp)
+        Text(body, color = fg, fontSize = 13.sp, lineHeight = 21.sp, modifier = Modifier.padding(top = 10.dp))
     }
 }
