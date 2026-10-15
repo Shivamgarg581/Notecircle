@@ -1,116 +1,35 @@
-# NoteCircle — Native Android App (Jetpack Compose & Kotlin)
+# NoteCircle Android
 
-> **Engineering Status**: Complete Native Android Application Codebase (Kotlin 2.0 + Jetpack Compose + Material 3 + Retrofit + Coroutines).
-> *All Gradle build scripts (`build.gradle.kts`, `settings.gradle.kts`, `libs.versions.toml`), AndroidManifest, ViewModels, Repositories, Theme, and Compose screens are complete.*
+Native Android app scaffold built with Kotlin, Jetpack Compose, Material 3, Retrofit, and OkHttp.
 
-Both the Native Android application and the Responsive Web application share the exact same backend API, SQLite/WAL database schemas, authenticated session management, privacy validation rules, temporary note expiration engine, and private chat.
+## Build an APK
 
-## 1. Android Technology Stack
-- **Language**: Kotlin 2.0+
-- **UI Toolkit**: Jetpack Compose + Material 3 (Calm, Minimal, Low-pressure Theme)
-- **Architecture**: Modern Android Architecture (UI Layer -> ViewModel -> Repository -> Network)
-- **Dependency Injection**: Hilt (Dagger)
-- **Concurrency**: Kotlin Coroutines + StateFlow / SharedFlow
-- **Networking**: Retrofit 2 + OkHttp 4 with Persistent Token Authenticator
-- **Push Notifications**: Firebase Cloud Messaging (FCM)
-- **Local Storage**: EncryptedSharedPreferences (Jetpack Security) + Room (offline cache strictly for own draft notes)
+The repository includes a GitHub Actions workflow at `.github/workflows/android-apk.yml`.
 
-## 2. API Contract & Endpoints
-The Android app communicates with the same NoteCircle backend:
-- `POST /api/auth/login` - Authenticate with email/username and password
-- `POST /api/auth/register` - Create private account
-- `GET /api/notes/feed` - Fetch temporary notes from approved connections
-- `POST /api/notes` - Post note (10-second fast composer)
-- `POST /api/notes/{id}/reaction` - React with emoji
-- `POST /api/notes/{id}/reply` - Reply to private note
-- `GET /api/chat/conversations` - List active conversations with participants' live status notes
-- `GET /api/chat/conversations/{id}/messages` - Fetch encrypted messages
-- `POST /api/chat/conversations/{id}/messages` - Send message with DND status checking
-- `GET /api/connections/pending` - Incoming & outgoing follow requests
-- `POST /api/connections/requests/{id}/accept` - Approve follow request
-- `GET /api/users/profile/{username}` - Retrieve privacy-redacted profile
+1. Open the [Actions page](https://github.com/Shivamgarg581/Notecircle/actions).
+2. Select **Android APK**.
+3. Run the workflow with **Run workflow**, or push a change to the Android project.
+4. Open the completed run and download the `notecircle-debug-apk` artifact.
+5. Extract the ZIP and install the APK on an Android device. Android may ask you to allow installation from your browser or file manager.
 
-## 3. Directory Structure
-```
-android/
-├── app/
-│   ├── src/main/java/app/notecircle/
-│   │   ├── data/
-│   │   │   ├── api/NoteCircleApiService.kt
-│   │   │   ├── model/NoteDto.kt
-│   │   │   └── repository/NotesRepository.kt
-│   │   ├── ui/
-│   │   │   ├── theme/Theme.kt
-│   │   │   ├── feed/FeedScreen.kt
-│   │   │   ├── feed/FeedViewModel.kt
-│   │   │   ├── composer/NoteComposerScreen.kt
-│   │   │   ├── chat/ChatScreen.kt
-│   │   │   └── profile/ProfileScreen.kt
-│   │   └── MainActivity.kt
-└── build.gradle.kts
-```
+The workflow uses Java 17, Android SDK platform 35, and Gradle 8.9. The project currently does not include the Gradle wrapper, so the workflow installs Gradle on the runner.
 
-## 4. Key Kotlin Implementation: NoteCircleApiService.kt
-```kotlin
-package app.notecircle.data.api
+## Current implementation status
 
-import retrofit2.http.*
+The current Android code is an early scaffold, not yet a complete production client.
 
-interface NoteCircleApiService {
-    @GET("api/notes/feed")
-    suspend fun getFeed(): FeedResponse
+- The Circle/Feed screen currently starts with an empty in-memory list; its refresh callback is not connected to the repository.
+- The floating action button is not connected to a note composer.
+- Chat and Profile navigation destinations in `MainActivity.kt` are placeholders.
+- API service and repository classes exist, but the UI does not yet complete the login/session flow or load the feed from the deployed backend.
+- The chat UI displays `MessageDto.text` and contains an “End-to-End Encrypted” label, but the Android UI shown here does not implement encryption/decryption. Do not treat the label as proof that end-to-end encryption is active.
 
-    @POST("api/notes")
-    suspend fun createNote(@Body request: CreateNoteRequest): NoteResponse
+## Before production use
 
-    @POST("api/notes/{id}/reaction")
-    suspend fun toggleReaction(@Path("id") noteId: String, @Body body: Map<String, String>): NoteResponse
+1. Connect login and secure session/token storage.
+2. Configure the HTTPS backend base URL and wire the feed, posting, profile, and chat screens to the repository.
+3. Implement and test client-side message encryption/decryption before presenting chat as end-to-end encrypted.
+4. Add unit/instrumentation tests and verify the app against a test backend.
+5. Configure release signing securely in GitHub Actions if a signed release APK is needed.
 
-    @GET("api/chat/conversations")
-    suspend fun getConversations(): ConversationsResponse
-
-    @POST("api/chat/conversations/{id}/messages")
-    suspend fun sendMessage(
-        @Path("id") convId: String,
-        @Body message: SendMessageRequest
-    ): MessageResponse
-
-    @GET("api/connections/pending")
-    suspend fun getPendingRequests(): PendingRequestsResponse
-}
-```
-
-## 5. Jetpack Compose NoteCard Component
-```kotlin
-@Composable
-fun NoteCard(
-    note: Note,
-    onReact: (String) -> Unit,
-    onReply: (String) -> Unit,
-    onAuthorClick: () -> Unit
-) {
-    Card(
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp)
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                AsyncImage(
-                    model = note.author.avatarUrl,
-                    contentDescription = note.author.displayName,
-                    modifier = Modifier.size(40.dp).clip(CircleShape)
-                )
-                Spacer(modifier = Modifier.width(10.dp))
-                Column {
-                    Text(text = note.author.displayName, style = MaterialTheme.typography.titleSmall)
-                    Text(text = "@${note.author.username} · Expires ${note.expiresAt}", style = MaterialTheme.typography.bodySmall)
-                }
-            }
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(text = "${note.emoji} ${note.categoryLabel}", style = MaterialTheme.typography.labelMedium)
-            Text(text = note.text, style = MaterialTheme.typography.bodyMedium)
-        }
-    }
-}
-```
+Never commit API keys, signing keys, passwords, or production secrets to the repository.
