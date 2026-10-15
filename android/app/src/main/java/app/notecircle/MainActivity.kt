@@ -265,8 +265,7 @@ private fun CircleScreen(notes: List<NoteDto>, people: List<DemoPerson>, onCompo
                     Column(Modifier.weight(1f)) {
                         Text("A little check-in", color = Color(0xFFFFD9A0), fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.2.sp)
                         Spacer(Modifier.height(6.dp))
-                        Text("How’s your day
-really going?", color = Color.White, fontSize = 22.sp, lineHeight = 27.sp, fontWeight = FontWeight.ExtraBold)
+                        Text("How’s your day\nreally going?", color = Color.White, fontSize = 22.sp, lineHeight = 27.sp, fontWeight = FontWeight.ExtraBold)
                         Spacer(Modifier.height(12.dp))
                         Button(onClick = onCompose, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFD9A0), contentColor = Ink), shape = RoundedCornerShape(12.dp), contentPadding = PaddingValues(horizontal = 14.dp, vertical = 4.dp)) {
                             Text("Post a note  ↗", fontSize = 12.sp, fontWeight = FontWeight.Bold)
