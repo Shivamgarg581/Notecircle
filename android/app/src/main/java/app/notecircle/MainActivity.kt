@@ -294,7 +294,7 @@ private fun NoteCircleApp(api: NoteCircleApi) {
                         onMessageText = { messageText = it },
                         onOpen = { conversation ->
                             selectedConversation = conversation
-                            task {
+                            if (conversation != null) task {
                                 val id = conversation.optString("id")
                                 val data = withContext(Dispatchers.IO) { api.messages(id) }
                                 messages.clear()
@@ -588,7 +588,7 @@ private fun NoteCard(note: JSONObject, onReact: () -> Unit, onReply: () -> Unit)
 @Composable
 private fun ChatScreen(
     conversations: SnapshotStateList<JSONObject>, selected: JSONObject?, messages: SnapshotStateList<JSONObject>,
-    messageText: String, onMessageText: (String) -> Unit, onOpen: (JSONObject) -> Unit,
+    messageText: String, onMessageText: (String) -> Unit, onOpen: (JSONObject?) -> Unit,
     onSend: () -> Unit, onRefresh: () -> Unit
 ) {
     if (selected == null) {
@@ -618,7 +618,7 @@ private fun ChatScreen(
     } else {
         Column(Modifier.fillMaxSize().padding(14.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("‹", fontSize = 28.sp, modifier = Modifier.clickable { onOpen(JSONObject()) }.padding(end = 10.dp))
+                Text("‹", fontSize = 28.sp, modifier = Modifier.clickable { onOpen(null) }.padding(end = 10.dp))
                 Column {
                     Text(selected.optString("title").ifBlank { "Conversation" }, fontSize = 22.sp, fontWeight = FontWeight.Black)
                     Text("Messages are sent through your NoteCircle server", color = Muted, fontSize = 11.sp)
@@ -670,12 +670,12 @@ private fun CircleScreen(
         }
         item { Text("CONNECTED", fontWeight = FontWeight.Black, letterSpacing = 1.sp) }
         if (connections.isEmpty()) item { EmptyCard("Your circle is waiting", "Search for a username above to find people.") }
-        items(connections, key = { it.optString("id") }) { person -> PersonCard(person, "Connected") {} }
+        items(connections, key = { it.optString("id") }) { person -> PersonCard(person, "Connected", null) }
     }
 }
 
 @Composable
-private fun PersonCard(person: JSONObject, action: String, onClick: () -> Unit) {
+private fun PersonCard(person: JSONObject, action: String, onClick: (() -> Unit)?) {
     val name = person.optString("displayName").ifBlank { person.optString("username").ifBlank { "Circle member" } }
     Card(shape = RoundedCornerShape(18.dp), colors = CardDefaults.cardColors(containerColor = CardWhite)) {
         Row(Modifier.fillMaxWidth().padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -684,7 +684,7 @@ private fun PersonCard(person: JSONObject, action: String, onClick: () -> Unit) 
                 Text(name, fontWeight = FontWeight.Bold)
                 Text("@${person.optString("username")}", color = Muted, fontSize = 12.sp)
             }
-            if (onClick != {}) {
+            if (onClick != null) {
                 OutlinedButton(onClick = onClick, contentPadding = PaddingValues(horizontal = 8.dp)) { Text(action, fontSize = 11.sp) }
             } else Text(action, fontSize = 11.sp, color = Muted)
         }
